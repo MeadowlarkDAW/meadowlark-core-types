@@ -1,4 +1,5 @@
 mod declick;
+mod parameter;
 mod smooth;
 mod time;
 
@@ -8,5 +9,6 @@ pub mod decibel;
 pub mod pcm;
 
 pub use declick::*;
+pub use parameter::*;
 pub use smooth::*;
 pub use time::*;
