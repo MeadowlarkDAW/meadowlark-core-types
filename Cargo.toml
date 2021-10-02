@@ -1,0 +1,17 @@
+[package]
+name = "rusty-daw-core"
+version = "0.1.0"
+edition = "2018"
+authors = ["Billy Messenger <BillyDM@tutamail.com>"]
+license = "MIT OR Apache-2.0"
+keywords = ["audio", "daw", "plugin", "types"]
+categories = ["multimedia::audio"]
+description = "Core types used in the RustyDAW project"
+documentation = "https://docs.rs/rusty-daw-core"
+repository = "https://github.com/RustyDAW/rusty-daw-core"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num-traits = "0.2"
