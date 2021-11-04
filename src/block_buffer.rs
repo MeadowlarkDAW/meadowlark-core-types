@@ -170,7 +170,7 @@ where
     }
 }
 
-/// An audio buffer with a single channel.
+/// An audio buffer with two channels.
 ///
 /// This has a constant number of frames (`N`), so this can be allocated on
 /// the stack.
@@ -342,6 +342,7 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX
         }
     }
 
+    /// Return a mutable reference to the left and right channels (in that order).
     #[inline]
     pub fn left_right_mut(&mut self) -> (&mut [T; MAX_BLOCKSIZE], &mut [T; MAX_BLOCKSIZE]) {
         (&mut self.left, &mut self.right)
