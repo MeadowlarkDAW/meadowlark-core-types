@@ -1,18 +1,16 @@
 use std::mem::MaybeUninit;
 use std::ops::Range;
 
-use num_traits::Num;
-
 /// An audio buffer with a single channel.
 ///
 /// This has a constant number of frames (`N`), so this can be allocated on
 /// the stack.
 #[derive(Debug)]
-pub struct MonoBlockBuffer<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> {
+pub struct MonoBlockBuffer<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> {
     pub buf: [T; MAX_BLOCKSIZE],
 }
 
-impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_BLOCKSIZE> {
+impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_BLOCKSIZE> {
     /// Create a new buffer.
     ///
     /// This is a constant size (`N`), so this can be allocated on the stack.
@@ -20,7 +18,7 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_B
     /// All samples will be cleared to 0.
     pub fn new() -> Self {
         Self {
-            buf: [T::zero(); MAX_BLOCKSIZE],
+            buf: [T::default(); MAX_BLOCKSIZE],
         }
     }
 
@@ -50,7 +48,7 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_B
         let mut buf: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
 
         let buf_part = &mut buf[0..frames];
-        buf_part.fill(T::zero());
+        buf_part.fill(T::default());
 
         Self { buf }
     }
@@ -69,7 +67,7 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_B
         let mut buf: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
 
         let buf_part = &mut buf[init_range];
-        buf_part.fill(T::zero());
+        buf_part.fill(T::default());
 
         Self { buf }
     }
@@ -77,7 +75,7 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_B
     /// Clear all samples in the buffer to 0.
     #[inline]
     pub fn clear(&mut self) {
-        self.buf.fill(T::zero());
+        self.buf.fill(T::default());
     }
 
     /// Clear a number of frames in the buffer to 0.
@@ -85,7 +83,7 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_B
     pub fn clear_frames(&mut self, frames: usize) {
         let frames = frames.min(MAX_BLOCKSIZE);
         let buf_part = &mut self.buf[0..frames];
-        buf_part.fill(T::zero());
+        buf_part.fill(T::default());
     }
 
     /// Clear a range in the buffer to 0.
@@ -95,7 +93,7 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_B
     #[inline]
     pub fn clear_range(&mut self, range: Range<usize>) {
         let buf_part = &mut self.buf[range];
-        buf_part.fill(T::zero());
+        buf_part.fill(T::default());
     }
 
     /// Copy all frames from `src` to this buffer.
@@ -110,46 +108,12 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_B
         let frames = frames.min(MAX_BLOCKSIZE);
         self.buf[0..frames].copy_from_slice(&src.buf[0..frames]);
     }
-
-    /// Add all frames from `src` to this buffer.
-    #[inline]
-    pub fn sum_from(&mut self, src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>) {
-        for i in 0..MAX_BLOCKSIZE {
-            self.buf[i] = self.buf[i] + src.buf[i];
-        }
-    }
-
-    /// Add the given number of frames from `src` to this buffer.
-    #[inline]
-    pub fn sum_frames_from(&mut self, src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>, frames: usize) {
-        let frames = frames.min(MAX_BLOCKSIZE);
-        for i in 0..frames {
-            self.buf[i] = self.buf[i] + src.buf[i];
-        }
-    }
-
-    /// Multiplay all frames from `src` to this buffer.
-    #[inline]
-    pub fn multiply_from(&mut self, src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>) {
-        for i in 0..MAX_BLOCKSIZE {
-            self.buf[i] = self.buf[i] * src.buf[i];
-        }
-    }
-
-    /// Multiply the given number of frames from `src` to this buffer.
-    #[inline]
-    pub fn multiply_frames_from(&mut self, src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>, frames: usize) {
-        let frames = frames.min(MAX_BLOCKSIZE);
-        for i in 0..frames {
-            self.buf[i] = self.buf[i] * src.buf[i];
-        }
-    }
 }
 
 impl<T, I, const MAX_BLOCKSIZE: usize> std::ops::Index<I> for MonoBlockBuffer<T, MAX_BLOCKSIZE>
 where
     I: std::slice::SliceIndex<[T]>,
-    T: Num + Copy + Clone,
+    T: Default + Copy + Clone,
 {
     type Output = I::Output;
 
@@ -162,7 +126,7 @@ where
 impl<T, I, const MAX_BLOCKSIZE: usize> std::ops::IndexMut<I> for MonoBlockBuffer<T, MAX_BLOCKSIZE>
 where
     I: std::slice::SliceIndex<[T]>,
-    T: Num + Copy + Clone,
+    T: Default + Copy + Clone,
 {
     #[inline]
     fn index_mut(&mut self, idx: I) -> &mut I::Output {
@@ -175,12 +139,12 @@ where
 /// This has a constant number of frames (`N`), so this can be allocated on
 /// the stack.
 #[derive(Debug)]
-pub struct StereoBlockBuffer<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> {
+pub struct StereoBlockBuffer<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> {
     pub left: [T; MAX_BLOCKSIZE],
     pub right: [T; MAX_BLOCKSIZE],
 }
 
-impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX_BLOCKSIZE> {
+impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX_BLOCKSIZE> {
     /// Create a new buffer.
     ///
     /// This is a constant size (`N`), so this can be allocated on the stack.
@@ -188,8 +152,8 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX
     /// All samples will be cleared to 0.
     pub fn new() -> Self {
         Self {
-            left: [T::zero(); MAX_BLOCKSIZE],
-            right: [T::zero(); MAX_BLOCKSIZE],
+            left: [T::default(); MAX_BLOCKSIZE],
+            right: [T::default(); MAX_BLOCKSIZE],
         }
     }
 
@@ -222,8 +186,8 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX
 
         let buf_left_part = &mut buf_left[0..frames];
         let buf_right_part = &mut buf_right[0..frames];
-        buf_left_part.fill(T::zero());
-        buf_right_part.fill(T::zero());
+        buf_left_part.fill(T::default());
+        buf_right_part.fill(T::default());
 
         Self {
             left: buf_left,
@@ -247,8 +211,8 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX
 
         let buf_left_part = &mut buf_left[init_range.clone()];
         let buf_right_part = &mut buf_right[init_range];
-        buf_left_part.fill(T::zero());
-        buf_right_part.fill(T::zero());
+        buf_left_part.fill(T::default());
+        buf_right_part.fill(T::default());
 
         Self {
             left: buf_left,
@@ -259,8 +223,8 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX
     /// Clear all samples in the buffer to 0.
     #[inline]
     pub fn clear(&mut self) {
-        self.left.fill(T::zero());
-        self.right.fill(T::zero());
+        self.left.fill(T::default());
+        self.right.fill(T::default());
     }
 
     /// Clear a number of frames in the buffer to 0.
@@ -269,8 +233,8 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX
         let frames = frames.min(MAX_BLOCKSIZE);
         let buf_left_part = &mut self.left[0..frames];
         let buf_right_part = &mut self.right[0..frames];
-        buf_left_part.fill(T::zero());
-        buf_right_part.fill(T::zero());
+        buf_left_part.fill(T::default());
+        buf_right_part.fill(T::default());
     }
 
     /// Clear a range in the buffer to 0.
@@ -281,8 +245,8 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX
     pub fn clear_range(&mut self, range: Range<usize>) {
         let buf_left_part = &mut self.left[range.clone()];
         let buf_right_part = &mut self.right[range];
-        buf_left_part.fill(T::zero());
-        buf_right_part.fill(T::zero());
+        buf_left_part.fill(T::default());
+        buf_right_part.fill(T::default());
     }
 
     /// Copy all frames from `src` to this buffer.
@@ -298,48 +262,6 @@ impl<T: Num + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX
         let frames = frames.min(MAX_BLOCKSIZE);
         self.left[0..frames].copy_from_slice(&src.left[0..frames]);
         self.right[0..frames].copy_from_slice(&src.right[0..frames]);
-    }
-
-    /// Add all frames from `src` to this buffer.
-    #[inline]
-    pub fn sum_from(&mut self, src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>) {
-        for i in 0..MAX_BLOCKSIZE {
-            self.left[i] = self.left[i] + src.left[i];
-            self.right[i] = self.right[i] + src.right[i];
-        }
-    }
-
-    /// Add the given number of frames from `src` to this buffer.
-    #[inline]
-    pub fn sum_frames_from(&mut self, src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>, frames: usize) {
-        let frames = frames.min(MAX_BLOCKSIZE);
-        for i in 0..frames {
-            self.left[i] = self.left[i] + src.left[i];
-            self.right[i] = self.right[i] + src.right[i];
-        }
-    }
-
-    /// Multiplay all frames from `src` to this buffer.
-    #[inline]
-    pub fn multiply_from(&mut self, src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>) {
-        for i in 0..MAX_BLOCKSIZE {
-            self.left[i] = self.left[i] * src.left[i];
-            self.right[i] = self.right[i] * src.right[i];
-        }
-    }
-
-    /// Multiply the given number of frames from `src` to this buffer.
-    #[inline]
-    pub fn multiply_frames_from(
-        &mut self,
-        src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>,
-        frames: usize,
-    ) {
-        let frames = frames.min(MAX_BLOCKSIZE);
-        for i in 0..frames {
-            self.left[i] = self.left[i] * src.left[i];
-            self.right[i] = self.right[i] * src.right[i];
-        }
     }
 
     /// Return a mutable reference to the left and right channels (in that order).

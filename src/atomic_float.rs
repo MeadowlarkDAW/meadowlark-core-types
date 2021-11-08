@@ -78,6 +78,8 @@ impl From<AtomicF32> for f32 {
     }
 }
 
+// ------  F64  -------------------------------------------------------------------------
+
 /// Simple atomic `f64` floating point variable with relaxed ordering.
 pub struct AtomicF64 {
     atomic: AtomicU64,

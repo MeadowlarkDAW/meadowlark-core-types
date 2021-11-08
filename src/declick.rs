@@ -8,7 +8,7 @@
 
 use std::fmt;
 
-use super::{SampleRate, Seconds, Smooth, SmoothStatus};
+use super::{SampleRate, Seconds, SmoothF32, SmoothStatus};
 
 const DECLICK_SETTLE: f32 = 0.001;
 
@@ -25,7 +25,7 @@ pub struct Declick<T: Sized + Clone, const MAX_BLOCKSIZE: usize> {
     next: Option<T>,
     staged: Option<T>,
 
-    fade: Smooth<f32, MAX_BLOCKSIZE>,
+    fade: SmoothF32<MAX_BLOCKSIZE>,
 }
 
 impl<T, const MAX_BLOCKSIZE: usize> Declick<T, MAX_BLOCKSIZE>
@@ -37,7 +37,7 @@ where
             current: initial,
             next: None,
             staged: None,
-            fade: Smooth::new(0.0),
+            fade: SmoothF32::new(0.0),
         }
     }
 
