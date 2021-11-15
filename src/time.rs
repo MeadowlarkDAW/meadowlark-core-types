@@ -3,8 +3,17 @@
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
+#[cfg(feature = "derive-druid")]
+use druid_derive::Data;
+
 /// Sampling rate in samples per second.
+#[cfg(not(feature = "derive-druid"))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct SampleRate(pub f64);
+
+/// Sampling rate in samples per second.
+#[cfg(feature = "derive-druid")]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Data)]
 pub struct SampleRate(pub f64);
 
 impl SampleRate {
@@ -93,7 +102,13 @@ impl Div<SampleRate> for f64 {
 }
 
 /// Musical time in units of "beats"
+#[cfg(not(feature = "derive-druid"))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct MusicalTime(pub f64);
+
+/// Musical time in units of "beats"
+#[cfg(feature = "derive-druid")]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Data)]
 pub struct MusicalTime(pub f64);
 
 impl MusicalTime {
@@ -248,7 +263,13 @@ impl DivAssign<MusicalTime> for MusicalTime {
 }
 
 /// Unit of time in "Seconds"
+#[cfg(not(feature = "derive-druid"))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Seconds(pub f64);
+
+/// Unit of time in "Seconds"
+#[cfg(feature = "derive-druid")]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Data)]
 pub struct Seconds(pub f64);
 
 impl Seconds {
@@ -412,7 +433,13 @@ impl DivAssign<Seconds> for Seconds {
 }
 
 /// Unit of time in discrete samples.
+#[cfg(not(feature = "derive-druid"))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
+pub struct SampleTime(pub i64);
+
+/// Unit of time in discrete samples.
+#[cfg(feature = "derive-druid")]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash, Data)]
 pub struct SampleTime(pub i64);
 
 impl SampleTime {

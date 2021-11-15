@@ -8,10 +8,14 @@
 
 use std::sync::Arc;
 
+#[cfg(feature = "derive-druid")]
+use druid_derive::Data;
+
 use super::atomic_float::{AtomicF32, AtomicF64};
 use super::decibel::{db_to_coeff_clamped_neg_90_db_f32, db_to_coeff_clamped_neg_90_db_f64};
 use super::{SampleRate, Seconds, SmoothF32, SmoothF64, SmoothOutputF32, SmoothOutputF64};
 
+#[cfg(not(feature = "derive-druid"))]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Gradient {
     Linear,
@@ -19,7 +23,23 @@ pub enum Gradient {
     Exponential,
 }
 
+#[cfg(feature = "derive-druid")]
+#[derive(Debug, Clone, Copy, PartialEq, Data)]
+pub enum Gradient {
+    Linear,
+    Power(f32),
+    Exponential,
+}
+
+#[cfg(not(feature = "derive-druid"))]
 #[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Unit {
+    Generic,
+    Decibels,
+}
+
+#[cfg(feature = "derive-druid")]
+#[derive(Debug, Clone, Copy, PartialEq, Data)]
 pub enum Unit {
     Generic,
     Decibels,
@@ -225,6 +245,7 @@ impl ParamF32Handle {
         self.unit
     }
 }
+
 
 fn normalized_to_value_f32(normalized: f32, min: f32, max: f32, gradient: Gradient) -> f32 {
     let normalized = normalized.min(1.0).max(0.0);
