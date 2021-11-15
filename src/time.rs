@@ -4,7 +4,7 @@ use std::hash::Hash;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[cfg(feature = "derive-druid")]
-use druid_derive::Data;
+use druid::Data;
 
 /// Sampling rate in samples per second.
 #[cfg(not(feature = "derive-druid"))]

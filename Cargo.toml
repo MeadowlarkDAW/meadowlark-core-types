@@ -14,8 +14,8 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
-derive-druid = ["druid-derive"]
+default = ["derive-druid"]
+derive-druid = ["druid"]
 
 [dependencies]
-druid-derive = { version = "0.4", optional = true }
+druid = { version = "0.7", optional = true }
