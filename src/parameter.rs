@@ -347,6 +347,20 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     pub fn normalized_to_value(&self, normalized: f32) -> f32 {
         normalized_to_value_f32(normalized, self.min, self.max, self.gradient)
     }
+
+    /// The current normalized value in the range `[0.0, 1.0]`. This is only meant for
+    /// communicating with the host. This is not meant to be used to retrieve the latest
+    /// value for DSP. To get the latest value for DSP please use `ParamF32::smoothed()`
+    /// instead.
+    ///
+    /// Please note that this should be called *after* calling `ParamF32::smoothed()`
+    /// if you need the latest value from the corresponding [`ParamF32UiHandle`],
+    /// otherwise this may not return the latest value.
+    ///
+    /// [`ParamF32UiHandle`]: struct.ParamF32UiHandle.html
+    pub fn normalized(&self) -> f32 {
+        self.normalized
+    }
 }
 
 /// A handle to update the value of an auto-smoothed [`ParamF32`] from a UI.
@@ -770,6 +784,20 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     /// corresponding value of this parameter.
     pub fn normalized_to_value(&self, normalized: f64) -> f64 {
         normalized_to_value_f64(normalized, self.min, self.max, self.gradient)
+    }
+
+    /// The current normalized value in the range `[0.0, 1.0]`. This is only meant for
+    /// communicating with the host. This is not meant to be used to retrieve the latest
+    /// value for DSP. To get the latest value for DSP please use `ParamF64::smoothed()`
+    /// instead.
+    ///
+    /// Please note that this should be called *after* calling `ParamF64::smoothed()`
+    /// if you need the latest value from the corresponding [`ParamF64UiHandle`],
+    /// otherwise this may not return the latest value.
+    ///
+    /// [`ParamF64UiHandle`]: struct.ParamF64UiHandle.html
+    pub fn normalized(&self) -> f64 {
+        self.normalized
     }
 }
 
