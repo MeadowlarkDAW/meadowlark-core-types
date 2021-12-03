@@ -126,7 +126,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     /// deals with decibels.
     pub const DEFAULT_DB_GRADIENT: Gradient = Gradient::Power(0.15);
 
-    /// Create a Parameter/UiHandle pair from its (de-normalized) value.
+    /// Create a Parameter/Handle pair from its (de-normalized) value.
     ///
     /// * value - The initial (de-normalized) value of the parameter.
     /// * min - The minimum (de-normalized) value of the parameter.
@@ -151,7 +151,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
         unit: Unit,
         smooth_secs: Seconds,
         sample_rate: SampleRate,
-    ) -> (Self, ParamF32UiHandle) {
+    ) -> (Self, ParamF32Handle) {
         let normalized = value_to_normalized_f32(value, min, max, gradient);
 
         let handle_value = normalized_to_value_f32(normalized, min, max, gradient);
@@ -177,7 +177,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
                 smoothed,
                 smooth_secs,
             },
-            ParamF32UiHandle {
+            ParamF32Handle {
                 min,
                 max,
                 gradient,
@@ -189,7 +189,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
         )
     }
 
-    /// Create a Parameter/UiHandle pair from its normalized value in the range `[0.0, 1.0]`.
+    /// Create a Parameter/Handle pair from its normalized value in the range `[0.0, 1.0]`.
     ///
     /// * value - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
     /// * min - The minimum (de-normalized) value of the parameter.
@@ -214,7 +214,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
         unit: Unit,
         smooth_secs: Seconds,
         sample_rate: SampleRate,
-    ) -> (Self, ParamF32UiHandle) {
+    ) -> (Self, ParamF32Handle) {
         let normalized = normalized.clamp(0.0, 1.0);
 
         let shared_normalized = Arc::new(AtomicF32::new(normalized));
@@ -240,7 +240,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
                 smoothed,
                 smooth_secs,
             },
-            ParamF32UiHandle {
+            ParamF32Handle {
                 min: min_value,
                 max: max_value,
                 gradient,
@@ -354,10 +354,10 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     /// instead.
     ///
     /// Please note that this should be called *after* calling `ParamF32::smoothed()`
-    /// if you need the latest value from the corresponding [`ParamF32UiHandle`],
+    /// if you need the latest value from the corresponding [`ParamF32Handle`],
     /// otherwise this may not return the latest value.
     ///
-    /// [`ParamF32UiHandle`]: struct.ParamF32UiHandle.html
+    /// [`ParamF32Handle`]: struct.ParamF32Handle.html
     pub fn normalized(&self) -> f32 {
         self.normalized
     }
@@ -366,7 +366,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
 /// A handle to update the value of an auto-smoothed [`ParamF32`] from a UI.
 ///
 /// [`ParamF32`]: struct.ParamF32.html
-pub struct ParamF32UiHandle {
+pub struct ParamF32Handle {
     min: f32,
     max: f32,
     gradient: Gradient,
@@ -378,7 +378,7 @@ pub struct ParamF32UiHandle {
     value: f32,
 }
 
-impl ParamF32UiHandle {
+impl ParamF32Handle {
     /// The normalized value in the range `[0.0, 1.0]`.
     ///
     /// Please note that the value in this UI handle will ***not*** be updated when the host
@@ -564,7 +564,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     /// deals with decibels.
     pub const DEFAULT_DB_GRADIENT: Gradient = Gradient::Power(0.15);
 
-    /// Create a Parameter/UiHandle pair from its (de-normalized) value.
+    /// Create a Parameter/Handle pair from its (de-normalized) value.
     ///
     /// * value - The initial (de-normalized) value of the parameter.
     /// * min - The minimum (de-normalized) value of the parameter.
@@ -589,7 +589,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
         unit: Unit,
         smooth_secs: Seconds,
         sample_rate: SampleRate,
-    ) -> (Self, ParamF64UiHandle) {
+    ) -> (Self, ParamF64Handle) {
         let normalized = value_to_normalized_f64(value, min, max, gradient);
 
         let handle_value = normalized_to_value_f64(normalized, min, max, gradient);
@@ -615,7 +615,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
                 smoothed,
                 smooth_secs,
             },
-            ParamF64UiHandle {
+            ParamF64Handle {
                 min,
                 max,
                 gradient,
@@ -627,7 +627,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
         )
     }
 
-    /// Create a Parameter/UiHandle pair from its normalized value in the range `[0.0, 1.0]`.
+    /// Create a Parameter/Handle pair from its normalized value in the range `[0.0, 1.0]`.
     ///
     /// * value - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
     /// * min - The minimum (de-normalized) value of the parameter.
@@ -652,7 +652,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
         unit: Unit,
         smooth_secs: Seconds,
         sample_rate: SampleRate,
-    ) -> (Self, ParamF64UiHandle) {
+    ) -> (Self, ParamF64Handle) {
         let normalized = normalized.clamp(0.0, 1.0);
 
         let shared_normalized = Arc::new(AtomicF64::new(normalized));
@@ -678,7 +678,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
                 smoothed,
                 smooth_secs,
             },
-            ParamF64UiHandle {
+            ParamF64Handle {
                 min: min_value,
                 max: max_value,
                 gradient,
@@ -792,10 +792,10 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     /// instead.
     ///
     /// Please note that this should be called *after* calling `ParamF64::smoothed()`
-    /// if you need the latest value from the corresponding [`ParamF64UiHandle`],
+    /// if you need the latest value from the corresponding [`ParamF64Handle`],
     /// otherwise this may not return the latest value.
     ///
-    /// [`ParamF64UiHandle`]: struct.ParamF64UiHandle.html
+    /// [`ParamF64Handle`]: struct.ParamF64Handle.html
     pub fn normalized(&self) -> f64 {
         self.normalized
     }
@@ -804,7 +804,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
 /// A handle to update the value of an auto-smoothed [`ParamF64`] from a UI.
 ///
 /// [`ParamF64`]: struct.ParamF64.html
-pub struct ParamF64UiHandle {
+pub struct ParamF64Handle {
     min: f64,
     max: f64,
     gradient: Gradient,
@@ -816,7 +816,7 @@ pub struct ParamF64UiHandle {
     value: f64,
 }
 
-impl ParamF64UiHandle {
+impl ParamF64Handle {
     /// The normalized value in the range `[0.0, 1.0]`.
     ///
     /// Please note that the value in this UI handle will ***not*** be updated when the host

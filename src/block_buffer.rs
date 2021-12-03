@@ -3,7 +3,7 @@ use std::ops::Range;
 
 /// An audio buffer with a single channel.
 ///
-/// This has a constant number of frames (`N`), so this can be allocated on
+/// This has a constant number of frames (`MAX_BLOCKSIZE`), so this can be allocated on
 /// the stack.
 #[derive(Debug)]
 pub struct MonoBlockBuffer<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> {
@@ -13,7 +13,7 @@ pub struct MonoBlockBuffer<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize
 impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, MAX_BLOCKSIZE> {
     /// Create a new buffer.
     ///
-    /// This is a constant size (`N`), so this can be allocated on the stack.
+    /// This is a constant size (`MAX_BLOCKSIZE`), so this can be allocated on the stack.
     ///
     /// All samples will be cleared to 0.
     pub fn new() -> Self {
@@ -24,7 +24,7 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
 
     /// Create a new buffer without initializing.
     ///
-    /// This is a constant size (`N`), so this can be allocated on the stack.
+    /// This is a constant size (`MAX_BLOCKSIZE`), so this can be allocated on the stack.
     ///
     /// ## Undefined behavior
     /// This data will be unitialized, so undefined behavior may occur if you try to read
@@ -38,7 +38,7 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     /// Create a new buffer that only initializes the given number of frames to 0. Any samples
     /// after `frames` will be uninitialized.
     ///
-    /// This is a constant size (`N`), so this can be allocated on the stack.
+    /// This is a constant size (`MAX_BLOCKSIZE`), so this can be allocated on the stack.
     ///
     /// ## Undefined behavior
     /// The portion of data not in the given range will be unitialized, so undefined behavior
@@ -55,7 +55,7 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
 
     /// Create a new buffer that only initializes the given range of data to 0.
     ///
-    /// This is a constant size (`N`), so this can be allocated on the stack.
+    /// This is a constant size (`MAX_BLOCKSIZE`), so this can be allocated on the stack.
     ///
     /// ## Undefined behavior
     /// The portion of data not in the given range will be unitialized, so undefined behavior
@@ -136,7 +136,7 @@ where
 
 /// An audio buffer with two channels.
 ///
-/// This has a constant number of frames (`N`), so this can be allocated on
+/// This has a constant number of frames (`MAX_BLOCKSIZE`), so this can be allocated on
 /// the stack.
 #[derive(Debug)]
 pub struct StereoBlockBuffer<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> {
@@ -147,7 +147,7 @@ pub struct StereoBlockBuffer<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usi
 impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T, MAX_BLOCKSIZE> {
     /// Create a new buffer.
     ///
-    /// This is a constant size (`N`), so this can be allocated on the stack.
+    /// This is a constant size (`MAX_BLOCKSIZE`), so this can be allocated on the stack.
     ///
     /// All samples will be cleared to 0.
     pub fn new() -> Self {
@@ -159,7 +159,7 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
 
     /// Create a new buffer without initializing.
     ///
-    /// This is a constant size (`N`), so this can be allocated on the stack.
+    /// This is a constant size (`MAX_BLOCKSIZE`), so this can be allocated on the stack.
     ///
     /// ## Undefined behavior
     /// This data will be unitialized, so undefined behavior may occur if you try to read
@@ -174,7 +174,7 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     /// Create a new buffer that only initializes the given number of frames to 0. Any samples
     /// after `frames` will be uninitialized.
     ///
-    /// This is a constant size (`N`), so this can be allocated on the stack.
+    /// This is a constant size (`MAX_BLOCKSIZE`), so this can be allocated on the stack.
     ///
     /// ## Undefined behavior
     /// The portion of data not in the given range will be unitialized, so undefined behavior
@@ -197,7 +197,7 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
 
     /// Create a new buffer that only initializes the given range of data to 0.
     ///
-    /// This is a constant size (`N`), so this can be allocated on the stack.
+    /// This is a constant size (`MAX_BLOCKSIZE`), so this can be allocated on the stack.
     ///
     /// ## Undefined behavior
     /// The portion of data not in the given range will be unitialized, so undefined behavior
