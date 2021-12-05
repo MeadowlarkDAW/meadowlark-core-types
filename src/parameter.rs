@@ -15,6 +15,18 @@ use super::decibel::{
 };
 use super::{SampleRate, Seconds, SmoothF32, SmoothF64, SmoothOutputF32, SmoothOutputF64};
 
+/// A good default value to use as `smooth_secs` parameter when creating a [`ParamF32`]/[`ParamF64`].
+///
+/// This specifies that the low-pass parameter smoothing filter should use a period of `5 ms`.
+///
+/// [`ParamF32`]: struct.ParamF32.html
+/// [`ParamF64`]: struct.ParamF64.html
+pub const DEFAULT_SMOOTH_SECS: Seconds = Seconds(5.0 / 1_000.0);
+
+/// A good default value to use as `gradient` parameter when creating a [`ParamF32`]/[`ParamF64`] that
+/// deals with decibels.
+pub const DEFAULT_DB_GRADIENT: Gradient = Gradient::Power(0.15);
+
 /// The gradient used when mapping the normalized value in the range `[0.0, 1.0]` to the
 /// desired value.
 ///
@@ -114,18 +126,6 @@ pub struct ParamF32<const MAX_BLOCKSIZE: usize> {
 }
 
 impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
-    /// A good default value to use as `smooth_secs` parameter when creating a [`ParamF32`]/[`ParamF64`].
-    ///
-    /// This specifies that the low-pass parameter smoothing filter should use a period of `5 ms`.
-    ///
-    /// [`ParamF32`]: struct.ParamF32.html
-    /// [`ParamF64`]: struct.ParamF64.html
-    pub const DEFAULT_SMOOTH_SECS: Seconds = Seconds(5.0 / 1_000.0);
-
-    /// A good default value to use as `gradient` parameter when creating a [`ParamF32`]/[`ParamF64`] that
-    /// deals with decibels.
-    pub const DEFAULT_DB_GRADIENT: Gradient = Gradient::Power(0.15);
-
     /// Create a Parameter/Handle pair from its (de-normalized) value.
     ///
     /// * value - The initial (de-normalized) value of the parameter.
@@ -625,18 +625,6 @@ pub struct ParamF64<const MAX_BLOCKSIZE: usize> {
 }
 
 impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
-    /// A good default value to use as `smooth_secs` parameter when creating a [`ParamF32`]/[`ParamF64`].
-    ///
-    /// This specifies that the low-pass parameter smoothing filter should use a period of `5 ms`.
-    ///
-    /// [`ParamF32`]: struct.ParamF32.html
-    /// [`ParamF64`]: struct.ParamF64.html
-    pub const DEFAULT_SMOOTH_SECS: Seconds = Seconds(5.0 / 1_000.0);
-
-    /// A good default value to use as `gradient` parameter when creating a [`ParamF32`]/[`ParamF64`] that
-    /// deals with decibels.
-    pub const DEFAULT_DB_GRADIENT: Gradient = Gradient::Power(0.15);
-
     /// Create a Parameter/Handle pair from its (de-normalized) value.
     ///
     /// * value - The initial (de-normalized) value of the parameter.
