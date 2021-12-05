@@ -312,6 +312,11 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
         self.smoothed.reset(self.value);
     }
 
+    /// Reset the internal smoothing buffer.
+    pub fn reset(&mut self) {
+        self.smoothed.reset(self.value);
+    }
+
     /// Get the smoothed buffer of values for use in DSP.
     pub fn smoothed(&mut self, frames: usize) -> SmoothOutputF32<MAX_BLOCKSIZE> {
         let new_normalized = self.shared_normalized.get();
@@ -815,6 +820,11 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
             _ => v,
         };
 
+        self.smoothed.reset(self.value);
+    }
+
+    /// Reset the internal smoothing buffer.
+    pub fn reset(&mut self) {
         self.smoothed.reset(self.value);
     }
 
