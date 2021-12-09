@@ -92,29 +92,107 @@ impl Div<SampleRate> for f64 {
     }
 }
 
-/// Musical time in units of "beats"
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-pub struct MusicalTime(pub f64);
+/// Musical time in units of 1 / 28,224,000 beats.
+///
+/// This number was chosen because it is nicely divisible by a whole slew of factors
+/// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 16, 20, 24, 32, 64, 128, 256, 512, and 1920`,
+/// as well as common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400,
+/// and 192000`. This ensures that any recording of note data in this format will always be
+/// at-least sample-accurate.
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
+pub struct MusicalTime(pub i64);
 
 impl MusicalTime {
+    /// * super_beats - Musical time in units of 1 / 28,224,000 beats.
     #[inline]
-    pub fn new(beats: f64) -> Self {
-        MusicalTime(beats)
+    pub fn new(super_beats: i64) -> Self {
+        MusicalTime(super_beats)
     }
 
+    /// * beats - Musical time in units of beats (as apposed to
+    /// units of "super beats").
     #[inline]
-    pub fn as_f32(&self) -> f32 {
-        self.0 as f32
+    pub fn from_beats(beats: i64) -> Self {
+        MusicalTime(beats * 28_224_000)
+    }
+
+    /// * half_beats - Musical time in units of 1 / 2 beats (as apposed to
+    /// units of "super beats").
+    #[inline]
+    pub fn from_half_beats(half_beats: i64) -> Self {
+        MusicalTime(half_beats * (28_224_000 / 2))
+    }
+
+    /// * quarter_beats - Musical time in units of 1 / 4 beats (as apposed to
+    /// units of "super beats").
+    #[inline]
+    pub fn from_quarter_beats(quarter_beats: i64) -> Self {
+        MusicalTime(quarter_beats * (28_224_000 / 4))
+    }
+
+    /// * eighth_beats - Musical time in units of 1 / 8 beats (as apposed to
+    /// units of "super beats").
+    #[inline]
+    pub fn from_eighth_beats(eighth_beats: i64) -> Self {
+        MusicalTime(eighth_beats * (28_224_000 / 8))
+    }
+
+    /// * sixteenth_beats - Musical time in units of 1 / 16 beats (as apposed to
+    /// units of "super beats").
+    #[inline]
+    pub fn from_sixteenth_beats(sixteenth_beats: i64) -> Self {
+        MusicalTime(sixteenth_beats * (28_224_000 / 16))
+    }
+
+    /// * thirty_second_beats - Musical time in units of 1 / 32 beats (as apposed to
+    /// units of "super beats").
+    #[inline]
+    pub fn from_32nd_beats(thirty_second_beats: i64) -> Self {
+        MusicalTime(thirty_second_beats * (28_224_000 / 32))
+    }
+
+    /// * sixty_fourth_beats - Musical time in units of 1 / 64 beats (as apposed to
+    /// units of "super beats").
+    #[inline]
+    pub fn from_64th_beats(sixty_fourth_beats: i64) -> Self {
+        MusicalTime(sixty_fourth_beats * (28_224_000 / 32))
+    }
+
+    /// * third_beats - Musical time in units of 1 / 3 beats (as apposed to
+    /// units of "super beats").
+    #[inline]
+    pub fn from_third_beats(third_beats: i64) -> Self {
+        MusicalTime(third_beats * (28_224_000 / 3))
+    }
+
+    /// * fifth_beats - Musical time in units of 1 / 5 beats (as apposed to
+    /// units of "super beats").
+    #[inline]
+    pub fn from_fifth_beats(fifth_beats: i64) -> Self {
+        MusicalTime(fifth_beats * (28_224_000 / 5))
+    }
+
+    /// * seventh_beats - Musical time in units of 1 / 7 beats (as apposed to
+    /// units of "super beats").
+    #[inline]
+    pub fn from_seventh_beats(seventh_beats: i64) -> Self {
+        MusicalTime(seventh_beats * (28_224_000 / 7))
+    }
+
+    /// Convert the corresponding musical time in units of beats (as an `f64` value).
+    ///
+    /// This is useful for displaying notes in UI.
+    #[inline]
+    pub fn as_fractional_beats(&self) -> f64 {
+        self.0 as f64 / 28_224_000.0
     }
 
     /// Convert to the corresponding time in [`Seconds`].
     ///
-    /// Note that this must be re-calculated after recieving a new [`SampleRate`].
-    ///
     /// [`Seconds`]: struct.Seconds.html
     #[inline]
     pub fn to_seconds(&self, bpm: f64) -> Seconds {
-        Seconds(self.0 * 60.0 / bpm)
+        Seconds(self.as_fractional_beats() * 60.0 / bpm)
     }
 
     /// Convert to the corresponding discrete [`SampleTime`]. This will be rounded to the nearest sample.
@@ -157,47 +235,75 @@ impl MusicalTime {
     pub fn to_sub_sample(&self, bpm: f64, sample_rate: SampleRate) -> (SampleTime, f64) {
         self.to_seconds(bpm).to_sub_sample(sample_rate)
     }
+
+    /// Convert to the corresponding discrete [`SuperSampleTime`]. This will be rounded to the nearest super-sample.
+    ///
+    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
+    #[inline]
+    pub fn to_nearest_super_sample_round(&self, bpm: f64) -> SuperSampleTime {
+        self.to_seconds(bpm).to_nearest_super_sample_round()
+    }
+
+    /// Convert to the corresponding discrete [`SuperSampleTime`]. This will be floored to the nearest super-sample.
+    ///
+    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
+    #[inline]
+    pub fn to_nearest_super_sample_floor(&self, bpm: f64) -> SuperSampleTime {
+        self.to_seconds(bpm).to_nearest_super_sample_floor()
+    }
+
+    /// Convert to the corresponding discrete [`SuperSampleTime`]. This will be ceil-ed to the nearest super-sample.
+    ///
+    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
+    #[inline]
+    pub fn to_nearest_super_sample_ceil(&self, bpm: f64) -> SuperSampleTime {
+        self.to_seconds(bpm).to_nearest_super_sample_ceil()
+    }
+
+    /// Convert to the corresponding discrete [`SuperSampleTime`] floored to the nearest super-sample,
+    /// while also returning the fractional sub-super-sample part.
+    ///
+    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
+    #[inline]
+    pub fn to_sub_super_sample(&self, bpm: f64) -> (SuperSampleTime, f64) {
+        self.to_seconds(bpm).to_sub_super_sample()
+    }
 }
 
 impl Default for MusicalTime {
     fn default() -> Self {
-        MusicalTime(0.0)
+        MusicalTime(0)
     }
 }
 
 impl From<i8> for MusicalTime {
     fn from(s: i8) -> Self {
-        MusicalTime(f64::from(s))
+        MusicalTime(i64::from(s))
     }
 }
 impl From<u8> for MusicalTime {
     fn from(s: u8) -> Self {
-        MusicalTime(f64::from(s))
+        MusicalTime(i64::from(s))
     }
 }
 impl From<i16> for MusicalTime {
     fn from(s: i16) -> Self {
-        MusicalTime(f64::from(s))
+        MusicalTime(i64::from(s))
     }
 }
 impl From<u16> for MusicalTime {
     fn from(s: u16) -> Self {
-        MusicalTime(f64::from(s))
+        MusicalTime(i64::from(s))
     }
 }
 impl From<i32> for MusicalTime {
     fn from(s: i32) -> Self {
-        MusicalTime(f64::from(s))
+        MusicalTime(i64::from(s))
     }
 }
 impl From<u32> for MusicalTime {
     fn from(s: u32) -> Self {
-        MusicalTime(f64::from(s))
-    }
-}
-impl From<f32> for MusicalTime {
-    fn from(s: f32) -> Self {
-        MusicalTime(f64::from(s))
+        MusicalTime(i64::from(s))
     }
 }
 
@@ -271,6 +377,14 @@ impl Seconds {
         sample_time.to_seconds(sample_rate)
     }
 
+    /// Creates a new time in `Seconds` from [`SuperSampleTime`].
+    ///
+    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
+    #[inline]
+    pub fn from_super_sample(super_sample_time: SuperSampleTime) -> Self {
+        super_sample_time.to_seconds()
+    }
+
     /// Convert to discrete [`SampleTime`] with the given [`SampleRate`]. This will
     /// be rounded to the nearest sample.
     ///
@@ -312,14 +426,52 @@ impl Seconds {
         (SampleTime(smps_f64.floor() as i64), smps_f64.fract())
     }
 
-    /// Convert to the corresponding [`MusicalTime`].
+    /// Convert to discrete [`SuperSampleTime`]. This will
+    /// be rounded to the nearest super-sample.
     ///
-    /// Note that this must be re-calculated after recieving a new [`SampleRate`].
+    /// [`SuperSampleTime`]: struct.SampleTime.html
+    #[inline]
+    pub fn to_nearest_super_sample_round(&self) -> SuperSampleTime {
+        SuperSampleTime((self.0 * 28_224_000.0).round() as i64)
+    }
+
+    /// Convert to discrete [`SampleTime`]. This will
+    /// be floored to the nearest super-sample.
+    ///
+    /// [`SuperSampleTime`]: struct.SampleTime.html
+    #[inline]
+    pub fn to_nearest_super_sample_floor(&self) -> SuperSampleTime {
+        SuperSampleTime((self.0 * 28_224_000.0).floor() as i64)
+    }
+
+    /// Convert to discrete [`SampleTime`]. This will
+    /// be ceil-ed to the nearest super-sample.
+    ///
+    /// [`SuperSampleTime`]: struct.SampleTime.html
+    #[inline]
+    pub fn to_nearest_super_sample_ceil(&self) -> SuperSampleTime {
+        SuperSampleTime((self.0 * 28_224_000.0).ceil() as i64)
+    }
+
+    /// Convert to discrete [`SampleTime`] floored to the nearest
+    /// super-sample, while also return the fractional sub-super-sample part.
+    ///
+    /// [`SuperSampleTime`]: struct.SampleTime.html
+    #[inline]
+    pub fn to_sub_super_sample(&self) -> (SuperSampleTime, f64) {
+        let super_smps_f64 = self.0 * 28_224_000.0;
+        (
+            SuperSampleTime(super_smps_f64.floor() as i64),
+            super_smps_f64.fract(),
+        )
+    }
+
+    /// Convert to the corresponding [`MusicalTime`].
     ///
     /// [`MusicalTime`]: ../time/struct.MusicalTime.html
     #[inline]
     pub fn to_musical(&self, bpm: f64) -> MusicalTime {
-        MusicalTime(self.0 * bpm / 60.0)
+        MusicalTime((self.0 * bpm * (28_224_000.0 / 60.0)).round() as i64)
     }
 }
 
@@ -459,7 +611,16 @@ impl SampleTime {
     /// [`MusicalTime`]: struct.MusicalTime.html
     #[inline]
     pub fn to_musical(&self, bpm: f64, sample_rate: SampleRate) -> MusicalTime {
-        MusicalTime(self.to_seconds(sample_rate).0 * bpm / 60.0)
+        self.to_seconds(sample_rate).to_musical(bpm)
+    }
+
+    /// Convert to the corresponding time in [`SuperSampleTime`] from the given [`SampleRate`].
+    ///
+    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
+    /// [`SampleRate`]: struct.SampleRate.html
+    #[inline]
+    pub fn to_super_sample(&self, sample_rate: SampleRate) -> SuperSampleTime {
+        SuperSampleTime::from_sample_time(*self, sample_rate)
     }
 }
 
@@ -524,6 +685,146 @@ impl AddAssign<SampleTime> for SampleTime {
     }
 }
 impl SubAssign<SampleTime> for SampleTime {
+    fn sub_assign(&mut self, other: Self) {
+        self.0 -= other.0;
+    }
+}
+
+/// Unit of time in discrete units of 1 / 28,224,000 seconds. This number
+/// happens to be nicely divisible by all common sample rates, allowing
+/// changes to sample rate in a project to be a lossless process.
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
+pub struct SuperSampleTime(pub i64);
+
+impl SuperSampleTime {
+    #[inline]
+    pub fn new(super_samples: i64) -> Self {
+        Self(super_samples)
+    }
+
+    #[inline]
+    pub fn from_usize(super_samples: usize) -> Self {
+        Self(super_samples as i64)
+    }
+
+    #[inline]
+    pub fn from_u64(super_samples: u64) -> Self {
+        Self(super_samples as i64)
+    }
+
+    pub fn from_sample_time(sample_time: SampleTime, sample_rate: SampleRate) -> Self {
+        match sample_rate.0 as usize {
+            44100 => Self(sample_time.0 * (28_224_000 / 44100)),
+            48000 => Self(sample_time.0 * (28_224_000 / 48000)),
+            88200 => Self(sample_time.0 * (28_224_000 / 88200)),
+            96000 => Self(sample_time.0 * (28_224_000 / 96000)),
+            176400 => Self(sample_time.0 * (28_224_000 / 176400)),
+            192000 => Self(sample_time.0 * (28_224_000 / 192000)),
+            22050 => Self(sample_time.0 * (28_224_000 / 22050)),
+            24000 => Self(sample_time.0 * (28_224_000 / 24000)),
+            _ => Self((sample_time.0 as f64 * (28_224_000.0 / sample_rate.0)).round() as i64),
+        }
+    }
+
+    /// Get the super-sample time as a `usize` value.
+    ///
+    /// This will return `None` when this sample time is negative.
+    #[inline]
+    pub fn as_usize(&self) -> Option<usize> {
+        if self.0 >= 0 {
+            Some(self.0 as usize)
+        } else {
+            None
+        }
+    }
+
+    /// Convert to the corresponding time in [`Seconds`].
+    ///
+    /// [`Seconds`]: struct.Seconds.html
+    #[inline]
+    pub fn to_seconds(&self) -> Seconds {
+        Seconds(self.0 as f64 / 28_224_000.0)
+    }
+
+    /// Convert to the corresponding [`MusicalTime`].
+    ///
+    /// [`MusicalTime`]: struct.MusicalTime.html
+    #[inline]
+    pub fn to_musical(&self, bpm: f64) -> MusicalTime {
+        self.to_seconds().to_musical(bpm)
+    }
+
+    /// Convert to the corresponding [`SampleTime`] from the given [`SampleRate`].
+    ///
+    /// [`SampleTime`]: struct.SampleTime.html
+    /// [`SampleRate`]: struct.SampleRate.html
+    #[inline]
+    pub fn to_sample_time(&self, sample_rate: SampleRate) -> SampleTime {
+        SampleTime((self.0 as f64 * sample_rate.0 / 28_224_000.0).round() as i64)
+    }
+}
+
+impl Default for SuperSampleTime {
+    fn default() -> Self {
+        SuperSampleTime(0)
+    }
+}
+
+impl From<i8> for SuperSampleTime {
+    fn from(s: i8) -> Self {
+        SuperSampleTime(i64::from(s))
+    }
+}
+impl From<u8> for SuperSampleTime {
+    fn from(s: u8) -> Self {
+        SuperSampleTime(i64::from(s))
+    }
+}
+impl From<i16> for SuperSampleTime {
+    fn from(s: i16) -> Self {
+        SuperSampleTime(i64::from(s))
+    }
+}
+impl From<u16> for SuperSampleTime {
+    fn from(s: u16) -> Self {
+        SuperSampleTime(i64::from(s))
+    }
+}
+impl From<i32> for SuperSampleTime {
+    fn from(s: i32) -> Self {
+        SuperSampleTime(i64::from(s))
+    }
+}
+impl From<u32> for SuperSampleTime {
+    fn from(s: u32) -> Self {
+        SuperSampleTime(i64::from(s))
+    }
+}
+impl From<i64> for SuperSampleTime {
+    fn from(s: i64) -> Self {
+        SuperSampleTime(s)
+    }
+}
+
+impl Add<SuperSampleTime> for SuperSampleTime {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
+impl Sub<SuperSampleTime> for SuperSampleTime {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+
+impl AddAssign<SuperSampleTime> for SuperSampleTime {
+    fn add_assign(&mut self, other: Self) {
+        self.0 += other.0;
+    }
+}
+impl SubAssign<SuperSampleTime> for SuperSampleTime {
     fn sub_assign(&mut self, other: Self) {
         self.0 -= other.0;
     }
