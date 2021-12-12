@@ -8,7 +8,7 @@
 
 use std::fmt;
 
-use super::{SampleRate, Seconds, SmoothF32, SmoothStatus};
+use super::{RealFrames, SampleRate, Seconds, SmoothF32, SmoothStatus};
 
 const DECLICK_SETTLE: f32 = 0.001;
 
@@ -102,8 +102,8 @@ where
     }
 
     #[inline]
-    pub fn process(&mut self, nframes: usize) {
-        self.fade.process(nframes);
+    pub fn process(&mut self, frames: RealFrames) {
+        self.fade.process(frames);
     }
 
     pub fn update_status(&mut self) {

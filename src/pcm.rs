@@ -1,4 +1,4 @@
-use super::{SampleRate, SampleTime, Seconds};
+use super::{RealFrames, RealSampleTime, SampleRate, Seconds};
 
 pub static U24_TO_F32_RATIO: f32 = 2.0 / 0x00FFFFFF as f32;
 pub static I16_TO_F32_RATIO: f32 = 1.0 / std::i16::MAX as f32;
@@ -21,7 +21,8 @@ impl AnyPCM {
         }
     }
 
-    pub fn len(&self) -> usize {
+    /// The length (of a single de-interleaved channel) of this resource in real samples.
+    pub fn len(&self) -> RealFrames {
         match self {
             AnyPCM::Mono(pcm) => pcm.len(),
             AnyPCM::Stereo(pcm) => pcm.len(),
@@ -44,8 +45,16 @@ pub struct MonoPCM {
 }
 
 impl MonoPCM {
+    pub fn new_empty(sample_rate: SampleRate) -> Self {
+        Self {
+            data: Vec::new(),
+            sample_rate,
+            len_secs: Seconds(0.0),
+        }
+    }
+
     pub fn new(data: Vec<f32>, sample_rate: SampleRate) -> Self {
-        let len_secs = SampleTime(data.len() as i64).to_seconds(sample_rate);
+        let len_secs = RealSampleTime(data.len() as i64).to_seconds(sample_rate);
 
         Self {
             data,
@@ -67,21 +76,21 @@ impl MonoPCM {
     pub fn set_sample_rate(&mut self, sample_rate: SampleRate) {
         if self.sample_rate != sample_rate {
             self.sample_rate = sample_rate;
-            self.len_secs = SampleTime(self.data.len() as i64).to_seconds(sample_rate);
+            self.len_secs = RealSampleTime(self.data.len() as i64).to_seconds(sample_rate);
         }
     }
 
-    pub fn resize(&mut self, new_len: usize, value: f32) {
-        if self.data.len() != new_len {
-            self.data.resize(new_len, value);
-            self.len_secs = SampleTime(self.data.len() as i64).to_seconds(self.sample_rate);
+    pub fn resize(&mut self, new_len: RealFrames, value: f32) {
+        if self.data.len() != new_len.0 {
+            self.data.resize(new_len.0, value);
+            self.len_secs = RealSampleTime(self.data.len() as i64).to_seconds(self.sample_rate);
         }
     }
 
-    pub unsafe fn set_len(&mut self, new_len: usize) {
-        if self.data.len() != new_len {
-            self.data.set_len(new_len);
-            self.len_secs = SampleTime(self.data.len() as i64).to_seconds(self.sample_rate);
+    pub unsafe fn set_len(&mut self, new_len: RealFrames) {
+        if self.data.len() != new_len.0 {
+            self.data.set_len(new_len.0);
+            self.len_secs = RealSampleTime(self.data.len() as i64).to_seconds(self.sample_rate);
         }
     }
 
@@ -95,9 +104,10 @@ impl MonoPCM {
         self.sample_rate
     }
 
+    /// The length of this resource in real samples.
     #[inline]
-    pub fn len(&self) -> usize {
-        self.data.len()
+    pub fn len(&self) -> RealFrames {
+        self.data.len().into()
     }
 
     #[inline]
@@ -116,10 +126,19 @@ pub struct StereoPCM {
 }
 
 impl StereoPCM {
+    pub fn new_empty(sample_rate: SampleRate) -> Self {
+        Self {
+            left: Vec::new(),
+            right: Vec::new(),
+            sample_rate,
+            len_secs: Seconds(0.0),
+        }
+    }
+
     pub fn new(left: Vec<f32>, right: Vec<f32>, sample_rate: SampleRate) -> Self {
         assert_eq!(left.len(), right.len());
 
-        let len_secs = SampleTime(left.len() as i64).to_seconds(sample_rate);
+        let len_secs = RealSampleTime(left.len() as i64).to_seconds(sample_rate);
 
         Self {
             left,
@@ -147,23 +166,23 @@ impl StereoPCM {
     pub fn set_sample_rate(&mut self, sample_rate: SampleRate) {
         if self.sample_rate != sample_rate {
             self.sample_rate = sample_rate;
-            self.len_secs = SampleTime(self.left.len() as i64).to_seconds(sample_rate);
+            self.len_secs = RealSampleTime(self.left.len() as i64).to_seconds(sample_rate);
         }
     }
 
-    pub fn resize(&mut self, new_len: usize, value: f32) {
-        if self.left.len() != new_len {
-            self.left.resize(new_len, value);
-            self.right.resize(new_len, value);
-            self.len_secs = SampleTime(self.left.len() as i64).to_seconds(self.sample_rate);
+    pub fn resize(&mut self, new_len: RealFrames, value: f32) {
+        if self.left.len() != new_len.0 {
+            self.left.resize(new_len.0, value);
+            self.right.resize(new_len.0, value);
+            self.len_secs = RealSampleTime(self.left.len() as i64).to_seconds(self.sample_rate);
         }
     }
 
-    pub unsafe fn set_len(&mut self, new_len: usize) {
-        if self.left.len() != new_len {
-            self.left.set_len(new_len);
-            self.right.set_len(new_len);
-            self.len_secs = SampleTime(self.left.len() as i64).to_seconds(self.sample_rate);
+    pub unsafe fn set_len(&mut self, new_len: RealFrames) {
+        if self.left.len() != new_len.0 {
+            self.left.set_len(new_len.0);
+            self.right.set_len(new_len.0);
+            self.len_secs = RealSampleTime(self.left.len() as i64).to_seconds(self.sample_rate);
         }
     }
 
@@ -173,9 +192,10 @@ impl StereoPCM {
         self.right.clear();
     }
 
+    /// The length (of a single de-interleaved channel) of this resource in real samples.
     #[inline]
-    pub fn len(&self) -> usize {
-        self.left.len()
+    pub fn len(&self) -> RealFrames {
+        self.left.len().into()
     }
 
     #[inline]

@@ -10,7 +10,7 @@ use std::fmt;
 use std::ops;
 use std::slice;
 
-use super::{SampleRate, Seconds};
+use super::{RealFrames, SampleRate, Seconds};
 
 const SETTLE: f32 = 0.00001f32;
 
@@ -126,12 +126,12 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
         self.status
     }
 
-    pub fn process(&mut self, nframes: usize) {
+    pub fn process(&mut self, frames: RealFrames) {
         if self.status != SmoothStatus::Active {
             return;
         }
 
-        let nframes = nframes.min(MAX_BLOCKSIZE);
+        let nframes = frames.0.min(MAX_BLOCKSIZE);
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
@@ -278,12 +278,12 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
         self.status
     }
 
-    pub fn process(&mut self, nframes: usize) {
+    pub fn process(&mut self, frames: RealFrames) {
         if self.status != SmoothStatus::Active {
             return;
         }
 
-        let nframes = nframes.min(MAX_BLOCKSIZE);
+        let nframes = frames.0.min(MAX_BLOCKSIZE);
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
