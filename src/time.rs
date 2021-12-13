@@ -195,56 +195,45 @@ impl MusicalTime {
         Seconds(self.as_fractional_beats() * 60.0 / bpm)
     }
 
-    /// Convert to the corresponding discrete [`RealSampleTime`]. This will be rounded to the nearest sample.
+    /// Convert to the corresponding discrete [`SampleTime`]. This will be rounded to the nearest sample.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     #[inline]
-    pub fn to_nearest_real_sample_round(
-        &self,
-        bpm: f64,
-        sample_rate: SampleRate,
-    ) -> RealSampleTime {
-        self.to_seconds(bpm)
-            .to_nearest_real_sample_round(sample_rate)
+    pub fn to_nearest_sample_round(&self, bpm: f64, sample_rate: SampleRate) -> SampleTime {
+        self.to_seconds(bpm).to_nearest_sample_round(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`RealSampleTime`]. This will be floored to the nearest sample.
+    /// Convert to the corresponding discrete [`SampleTime`]. This will be floored to the nearest sample.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     #[inline]
-    pub fn to_nearest_real_sample_floor(
-        &self,
-        bpm: f64,
-        sample_rate: SampleRate,
-    ) -> RealSampleTime {
-        self.to_seconds(bpm)
-            .to_nearest_real_sample_floor(sample_rate)
+    pub fn to_nearest_sample_floor(&self, bpm: f64, sample_rate: SampleRate) -> SampleTime {
+        self.to_seconds(bpm).to_nearest_sample_floor(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`RealSampleTime`]. This will be ceil-ed to the nearest sample.
+    /// Convert to the corresponding discrete [`SampleTime`]. This will be ceil-ed to the nearest sample.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     #[inline]
-    pub fn to_nearest_real_sample_ceil(&self, bpm: f64, sample_rate: SampleRate) -> RealSampleTime {
-        self.to_seconds(bpm)
-            .to_nearest_real_sample_ceil(sample_rate)
+    pub fn to_nearest_sample_ceil(&self, bpm: f64, sample_rate: SampleRate) -> SampleTime {
+        self.to_seconds(bpm).to_nearest_sample_ceil(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`RealSampleTime`] floored to the nearest sample,
+    /// Convert to the corresponding discrete [`SampleTime`] floored to the nearest sample,
     /// while also returning the fractional sub-sample part.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     #[inline]
-    pub fn to_sub_real_sample(&self, bpm: f64, sample_rate: SampleRate) -> (RealSampleTime, f64) {
-        self.to_seconds(bpm).to_sub_real_sample(sample_rate)
+    pub fn to_sub_sample(&self, bpm: f64, sample_rate: SampleRate) -> (SampleTime, f64) {
+        self.to_seconds(bpm).to_sub_sample(sample_rate)
     }
 
     /// Convert to the corresponding discrete [`SuperSampleTime`]. This will be rounded to the nearest super-sample.
@@ -379,12 +368,12 @@ impl Seconds {
         self.0 as f32
     }
 
-    /// Creates a new time in `Seconds` from [`RealSampleTime`] and a [`SampleRate`].
+    /// Creates a new time in `Seconds` from [`SampleTime`] and a [`SampleRate`].
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     /// [`SampleRate`]: struct.SampleRate.html
     #[inline]
-    pub fn from_real_sample(sample_time: RealSampleTime, sample_rate: SampleRate) -> Self {
+    pub fn from_sample(sample_time: SampleTime, sample_rate: SampleRate) -> Self {
         sample_time.to_seconds(sample_rate)
     }
 
@@ -396,78 +385,78 @@ impl Seconds {
         super_sample_time.to_seconds()
     }
 
-    /// Convert to discrete [`RealSampleTime`] with the given [`SampleRate`]. This will
+    /// Convert to discrete [`SampleTime`] with the given [`SampleRate`]. This will
     /// be rounded to the nearest sample.
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     /// [`SampleRate`]: struct.SampleRate.html
     #[inline]
-    pub fn to_nearest_real_sample_round(&self, sample_rate: SampleRate) -> RealSampleTime {
-        RealSampleTime((self.0 * sample_rate).round() as i64)
+    pub fn to_nearest_sample_round(&self, sample_rate: SampleRate) -> SampleTime {
+        SampleTime((self.0 * sample_rate).round() as i64)
     }
 
-    /// Convert to discrete [`RealSampleTime`] with the given [`SampleRate`]. This will
+    /// Convert to discrete [`SampleTime`] with the given [`SampleRate`]. This will
     /// be floored to the nearest sample.
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     /// [`SampleRate`]: struct.SampleRate.html
     #[inline]
-    pub fn to_nearest_real_sample_floor(&self, sample_rate: SampleRate) -> RealSampleTime {
-        RealSampleTime((self.0 * sample_rate).floor() as i64)
+    pub fn to_nearest_sample_floor(&self, sample_rate: SampleRate) -> SampleTime {
+        SampleTime((self.0 * sample_rate).floor() as i64)
     }
 
-    /// Convert to discrete [`RealSampleTime`] with the given [`SampleRate`]. This will
+    /// Convert to discrete [`SampleTime`] with the given [`SampleRate`]. This will
     /// be ceil-ed to the nearest sample.
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     /// [`SampleRate`]: struct.SampleRate.html
     #[inline]
-    pub fn to_nearest_real_sample_ceil(&self, sample_rate: SampleRate) -> RealSampleTime {
-        RealSampleTime((self.0 * sample_rate).ceil() as i64)
+    pub fn to_nearest_sample_ceil(&self, sample_rate: SampleRate) -> SampleTime {
+        SampleTime((self.0 * sample_rate).ceil() as i64)
     }
 
-    /// Convert to discrete [`RealSampleTime`] given the [`SampleRate`] floored to the nearest
+    /// Convert to discrete [`SampleTime`] given the [`SampleRate`] floored to the nearest
     /// sample, while also return the fractional sub-sample part.
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     /// [`SampleRate`]: struct.SampleRate.html
     #[inline]
-    pub fn to_sub_real_sample(&self, sample_rate: SampleRate) -> (RealSampleTime, f64) {
+    pub fn to_sub_sample(&self, sample_rate: SampleRate) -> (SampleTime, f64) {
         let smps_f64 = self.0 * sample_rate;
-        (RealSampleTime(smps_f64.floor() as i64), smps_f64.fract())
+        (SampleTime(smps_f64.floor() as i64), smps_f64.fract())
     }
 
     /// Convert to discrete [`SuperSampleTime`]. This will
     /// be rounded to the nearest super-sample.
     ///
-    /// [`SuperSampleTime`]: struct.RealSampleTime.html
+    /// [`SuperSampleTime`]: struct.SampleTime.html
     #[inline]
     pub fn to_nearest_super_sample_round(&self) -> SuperSampleTime {
         SuperSampleTime((self.0 * 28_224_000.0).round() as i64)
     }
 
-    /// Convert to discrete [`RealSampleTime`]. This will
+    /// Convert to discrete [`SampleTime`]. This will
     /// be floored to the nearest super-sample.
     ///
-    /// [`SuperSampleTime`]: struct.RealSampleTime.html
+    /// [`SuperSampleTime`]: struct.SampleTime.html
     #[inline]
     pub fn to_nearest_super_sample_floor(&self) -> SuperSampleTime {
         SuperSampleTime((self.0 * 28_224_000.0).floor() as i64)
     }
 
-    /// Convert to discrete [`RealSampleTime`]. This will
+    /// Convert to discrete [`SampleTime`]. This will
     /// be ceil-ed to the nearest super-sample.
     ///
-    /// [`SuperSampleTime`]: struct.RealSampleTime.html
+    /// [`SuperSampleTime`]: struct.SampleTime.html
     #[inline]
     pub fn to_nearest_super_sample_ceil(&self) -> SuperSampleTime {
         SuperSampleTime((self.0 * 28_224_000.0).ceil() as i64)
     }
 
-    /// Convert to discrete [`RealSampleTime`] floored to the nearest
+    /// Convert to discrete [`SampleTime`] floored to the nearest
     /// super-sample, while also return the fractional sub-super-sample part.
     ///
-    /// [`SuperSampleTime`]: struct.RealSampleTime.html
+    /// [`SuperSampleTime`]: struct.SampleTime.html
     #[inline]
     pub fn to_sub_super_sample(&self) -> (SuperSampleTime, f64) {
         let super_smps_f64 = self.0 * 28_224_000.0;
@@ -576,9 +565,9 @@ impl DivAssign<Seconds> for Seconds {
 
 /// Unit of time in discrete samples.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
-pub struct RealSampleTime(pub i64);
+pub struct SampleTime(pub i64);
 
-impl RealSampleTime {
+impl SampleTime {
     #[inline]
     pub fn new(samples: i64) -> Self {
         Self(samples)
@@ -631,71 +620,71 @@ impl RealSampleTime {
     /// [`SampleRate`]: struct.SampleRate.html
     #[inline]
     pub fn to_super_sample(&self, sample_rate: SampleRate) -> SuperSampleTime {
-        SuperSampleTime::from_real_sample_time(*self, sample_rate)
+        SuperSampleTime::from_sample_time(*self, sample_rate)
     }
 }
 
-impl Default for RealSampleTime {
+impl Default for SampleTime {
     fn default() -> Self {
-        RealSampleTime(0)
+        SampleTime(0)
     }
 }
 
-impl From<i8> for RealSampleTime {
+impl From<i8> for SampleTime {
     fn from(s: i8) -> Self {
-        RealSampleTime(i64::from(s))
+        SampleTime(i64::from(s))
     }
 }
-impl From<u8> for RealSampleTime {
+impl From<u8> for SampleTime {
     fn from(s: u8) -> Self {
-        RealSampleTime(i64::from(s))
+        SampleTime(i64::from(s))
     }
 }
-impl From<i16> for RealSampleTime {
+impl From<i16> for SampleTime {
     fn from(s: i16) -> Self {
-        RealSampleTime(i64::from(s))
+        SampleTime(i64::from(s))
     }
 }
-impl From<u16> for RealSampleTime {
+impl From<u16> for SampleTime {
     fn from(s: u16) -> Self {
-        RealSampleTime(i64::from(s))
+        SampleTime(i64::from(s))
     }
 }
-impl From<i32> for RealSampleTime {
+impl From<i32> for SampleTime {
     fn from(s: i32) -> Self {
-        RealSampleTime(i64::from(s))
+        SampleTime(i64::from(s))
     }
 }
-impl From<u32> for RealSampleTime {
+impl From<u32> for SampleTime {
     fn from(s: u32) -> Self {
-        RealSampleTime(i64::from(s))
+        SampleTime(i64::from(s))
     }
 }
-impl From<i64> for RealSampleTime {
+impl From<i64> for SampleTime {
     fn from(s: i64) -> Self {
-        RealSampleTime(s)
+        SampleTime(s)
     }
 }
 
-impl Add<RealSampleTime> for RealSampleTime {
+impl Add<SampleTime> for SampleTime {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
 }
-impl Sub<RealSampleTime> for RealSampleTime {
+impl Sub<SampleTime> for SampleTime {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 - rhs.0)
     }
 }
 
-impl AddAssign<RealSampleTime> for RealSampleTime {
+impl AddAssign<SampleTime> for SampleTime {
     fn add_assign(&mut self, other: Self) {
         self.0 += other.0;
     }
 }
-impl SubAssign<RealSampleTime> for RealSampleTime {
+impl SubAssign<SampleTime> for SampleTime {
     fn sub_assign(&mut self, other: Self) {
         self.0 -= other.0;
     }
@@ -723,7 +712,7 @@ impl SuperSampleTime {
         Self(super_samples as i64)
     }
 
-    pub fn from_real_sample_time(sample_time: RealSampleTime, sample_rate: SampleRate) -> Self {
+    pub fn from_sample_time(sample_time: SampleTime, sample_rate: SampleRate) -> Self {
         match sample_rate.0 as usize {
             44100 => Self(sample_time.0 * (28_224_000 / 44100)),
             48000 => Self(sample_time.0 * (28_224_000 / 48000)),
@@ -765,13 +754,13 @@ impl SuperSampleTime {
         self.to_seconds().to_musical(bpm)
     }
 
-    /// Convert to the corresponding [`RealSampleTime`] from the given [`SampleRate`].
+    /// Convert to the corresponding [`SampleTime`] from the given [`SampleRate`].
     ///
-    /// [`RealSampleTime`]: struct.RealSampleTime.html
+    /// [`SampleTime`]: struct.SampleTime.html
     /// [`SampleRate`]: struct.SampleRate.html
     #[inline]
-    pub fn to_real_sample_time(&self, sample_rate: SampleRate) -> RealSampleTime {
-        RealSampleTime((self.0 as f64 * sample_rate.0 / 28_224_000.0).round() as i64)
+    pub fn to_sample_time(&self, sample_rate: SampleRate) -> SampleTime {
+        SampleTime((self.0 as f64 * sample_rate.0 / 28_224_000.0).round() as i64)
     }
 }
 
@@ -842,14 +831,14 @@ impl SubAssign<SuperSampleTime> for SuperSampleTime {
 }
 
 /// Unit of time length (of a single de-interleaved channel) in real samples. This is similar
-/// to [`RealSampleTime`] except this will always be positive.
+/// to [`SampleTime`] except this will always be positive.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
-pub struct RealFrames(pub usize);
+pub struct Frames(pub usize);
 
-impl RealFrames {
+impl Frames {
     #[inline]
-    pub fn new(real_frames: usize) -> Self {
-        Self(real_frames)
+    pub fn new(frames: usize) -> Self {
+        Self(frames)
     }
 
     /// Convert to the corresponding time in [`Seconds`] with the given [`SampleRate`].
@@ -871,12 +860,12 @@ impl RealFrames {
         self.to_seconds(sample_rate).to_musical(bpm)
     }
 
-    /// Convert to the corresponding [`RealSampleTime`].
+    /// Convert to the corresponding [`SampleTime`].
     ///
-    /// [`RealSampleTimes`]: struct.RealSampleTime.html
+    /// [`SampleTimes`]: struct.SampleTime.html
     #[inline]
-    pub fn to_real_sample_time(&self) -> RealSampleTime {
-        RealSampleTime::new(self.0 as i64)
+    pub fn to_sample_time(&self) -> SampleTime {
+        SampleTime::new(self.0 as i64)
     }
 
     /// Convert to the corresponding time length in [`SuperFrames`] from the given [`SampleRate`].
@@ -885,76 +874,104 @@ impl RealFrames {
     /// [`SampleRate`]: struct.SampleRate.html
     #[inline]
     pub fn to_super_frames(&self, sample_rate: SampleRate) -> SuperFrames {
-        SuperFrames::from_real_frames(*self, sample_rate)
+        SuperFrames::from_frames(*self, sample_rate)
+    }
+
+    /// Returns the minimum of the two values.
+    ///
+    /// This is most commonly used to hint to the compiler that the number of frames is indeed
+    /// less than some constant value, allowing the compiler to safely elid all bounds checking
+    /// on constant-sized buffers.
+    /// For example:
+    /// ```rust
+    /// # use rusty_daw_core::{Frames, block_buffer::MonoBlockBuffer};
+    /// # let frames = Frames(100);
+    /// // A global constant in your application.
+    /// const MAX_BLOCKSIZE: usize = 128;
+    ///
+    /// // Some buffer with a constant size.
+    /// let mut buffer: MonoBlockBuffer<f32, MAX_BLOCKSIZE> = MonoBlockBuffer::new();
+    ///
+    /// // We know that `frames` will always be less than MAX_BLOCKSIZE, but the compiler
+    /// // doesn't. So hint to the compiler that it is safe to elid all bounds checking.
+    /// let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
+    ///
+    /// for i in 0..frames.0 {
+    ///     buffer.buf[i] += 1.0;  // Bounds checking should be now elided.
+    /// }
+    /// ```
+    #[inline]
+    pub fn compiler_hint_min(self, frames: usize) -> Frames {
+        Frames(self.0.min(frames))
     }
 }
 
-impl Default for RealFrames {
+impl Default for Frames {
     fn default() -> Self {
-        RealFrames(0)
+        Frames(0)
     }
 }
 
-impl From<u8> for RealFrames {
+impl From<u8> for Frames {
     fn from(s: u8) -> Self {
-        RealFrames(usize::from(s))
+        Frames(usize::from(s))
     }
 }
-impl From<u16> for RealFrames {
+impl From<u16> for Frames {
     fn from(s: u16) -> Self {
-        RealFrames(usize::from(s))
+        Frames(usize::from(s))
     }
 }
-impl From<usize> for RealFrames {
+impl From<usize> for Frames {
     fn from(s: usize) -> Self {
-        RealFrames(s)
+        Frames(s)
     }
 }
 
-impl Add<RealFrames> for RealFrames {
+impl Add<Frames> for Frames {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
 }
-impl Sub<RealFrames> for RealFrames {
+impl Sub<Frames> for Frames {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 - rhs.0)
     }
 }
 
-impl Add<RealFrames> for RealSampleTime {
+impl Add<Frames> for SampleTime {
     type Output = Self;
-    fn add(self, rhs: RealFrames) -> Self::Output {
+    fn add(self, rhs: Frames) -> Self::Output {
         Self(self.0 + rhs.0 as i64)
     }
 }
-impl Sub<RealFrames> for RealSampleTime {
+impl Sub<Frames> for SampleTime {
     type Output = Self;
-    fn sub(self, rhs: RealFrames) -> Self::Output {
+    fn sub(self, rhs: Frames) -> Self::Output {
         Self(self.0 - rhs.0 as i64)
     }
 }
 
-impl AddAssign<RealFrames> for RealFrames {
+impl AddAssign<Frames> for Frames {
     fn add_assign(&mut self, other: Self) {
         self.0 += other.0;
     }
 }
-impl SubAssign<RealFrames> for RealFrames {
+impl SubAssign<Frames> for Frames {
     fn sub_assign(&mut self, other: Self) {
         self.0 -= other.0;
     }
 }
 
-impl AddAssign<RealFrames> for RealSampleTime {
-    fn add_assign(&mut self, other: RealFrames) {
+impl AddAssign<Frames> for SampleTime {
+    fn add_assign(&mut self, other: Frames) {
         self.0 += other.0 as i64;
     }
 }
-impl SubAssign<RealFrames> for RealSampleTime {
-    fn sub_assign(&mut self, other: RealFrames) {
+impl SubAssign<Frames> for SampleTime {
+    fn sub_assign(&mut self, other: Frames) {
         self.0 -= other.0 as i64;
     }
 }
@@ -966,21 +983,21 @@ pub struct SuperFrames(pub usize);
 
 impl SuperFrames {
     #[inline]
-    pub fn new(real_frames: usize) -> Self {
-        Self(real_frames)
+    pub fn new(frames: usize) -> Self {
+        Self(frames)
     }
 
-    pub fn from_real_frames(real_frames: RealFrames, sample_rate: SampleRate) -> Self {
+    pub fn from_frames(frames: Frames, sample_rate: SampleRate) -> Self {
         match sample_rate.0 as usize {
-            44100 => Self(real_frames.0 * (28_224_000 / 44100)),
-            48000 => Self(real_frames.0 * (28_224_000 / 48000)),
-            88200 => Self(real_frames.0 * (28_224_000 / 88200)),
-            96000 => Self(real_frames.0 * (28_224_000 / 96000)),
-            176400 => Self(real_frames.0 * (28_224_000 / 176400)),
-            192000 => Self(real_frames.0 * (28_224_000 / 192000)),
-            22050 => Self(real_frames.0 * (28_224_000 / 22050)),
-            24000 => Self(real_frames.0 * (28_224_000 / 24000)),
-            _ => Self((real_frames.0 as f64 * (28_224_000.0 / sample_rate.0)).round() as usize),
+            44100 => Self(frames.0 * (28_224_000 / 44100)),
+            48000 => Self(frames.0 * (28_224_000 / 48000)),
+            88200 => Self(frames.0 * (28_224_000 / 88200)),
+            96000 => Self(frames.0 * (28_224_000 / 96000)),
+            176400 => Self(frames.0 * (28_224_000 / 176400)),
+            192000 => Self(frames.0 * (28_224_000 / 192000)),
+            22050 => Self(frames.0 * (28_224_000 / 22050)),
+            24000 => Self(frames.0 * (28_224_000 / 24000)),
+            _ => Self((frames.0 as f64 * (28_224_000.0 / sample_rate.0)).round() as usize),
         }
     }
 
@@ -1011,13 +1028,13 @@ impl SuperFrames {
         SuperSampleTime::new(self.0 as i64)
     }
 
-    /// Convert to the corresponding time length in [`RealFrames`] from the given [`SampleRate`].
+    /// Convert to the corresponding time length in [`Frames`] from the given [`SampleRate`].
     ///
-    /// [`RealFrames`]: struct.RealFrames.html
+    /// [`Frames`]: struct.Frames.html
     /// [`SampleRate`]: struct.SampleRate.html
     #[inline]
-    pub fn to_real_frames(&self, sample_rate: SampleRate) -> RealFrames {
-        RealFrames((self.0 as f64 * sample_rate.0 / 28_224_000.0).round() as usize)
+    pub fn to_frames(&self, sample_rate: SampleRate) -> Frames {
+        Frames((self.0 as f64 * sample_rate.0 / 28_224_000.0).round() as usize)
     }
 }
 

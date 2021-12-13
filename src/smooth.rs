@@ -10,7 +10,7 @@ use std::fmt;
 use std::ops;
 use std::slice;
 
-use super::{RealFrames, SampleRate, Seconds};
+use super::{Frames, SampleRate, Seconds};
 
 const SETTLE: f32 = 0.00001f32;
 
@@ -126,7 +126,7 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
         self.status
     }
 
-    pub fn process(&mut self, frames: RealFrames) {
+    pub fn process(&mut self, frames: Frames) {
         if self.status != SmoothStatus::Active {
             return;
         }
@@ -278,7 +278,7 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
         self.status
     }
 
-    pub fn process(&mut self, frames: RealFrames) {
+    pub fn process(&mut self, frames: Frames) {
         if self.status != SmoothStatus::Active {
             return;
         }
