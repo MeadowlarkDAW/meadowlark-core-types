@@ -22,7 +22,6 @@ pub enum SmoothStatus {
 }
 
 impl SmoothStatus {
-    #[inline]
     fn is_active(&self) -> bool {
         self != &SmoothStatus::Inactive
     }
@@ -34,7 +33,6 @@ pub struct SmoothOutputF32<'a, const MAX_BLOCKSIZE: usize> {
 }
 
 impl<'a, const MAX_BLOCKSIZE: usize> SmoothOutputF32<'a, MAX_BLOCKSIZE> {
-    #[inline]
     pub fn is_smoothing(&self) -> bool {
         self.status.is_active()
     }
@@ -89,12 +87,10 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
         self.status = SmoothStatus::Active;
     }
 
-    #[inline]
     pub fn dest(&self) -> f32 {
         self.input
     }
 
-    #[inline]
     pub fn output(&self) -> SmoothOutputF32<MAX_BLOCKSIZE> {
         SmoothOutputF32 {
             values: &self.output,
@@ -102,7 +98,6 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
         }
     }
 
-    #[inline]
     pub fn current_value(&self) -> (f32, SmoothStatus) {
         (self.last_output, self.status)
     }
@@ -131,7 +126,7 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
             return;
         }
 
-        let nframes = frames.0.min(MAX_BLOCKSIZE);
+        let nframes = frames.compiler_hint_min(MAX_BLOCKSIZE);
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
@@ -143,7 +138,6 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
         self.last_output = self.output[nframes - 1];
     }
 
-    #[inline]
     pub fn is_active(&self) -> bool {
         self.status.is_active()
     }
@@ -155,7 +149,6 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
         self.a = 1.0f32 - self.b;
     }
 
-    #[inline]
     pub fn update_status(&mut self) -> SmoothStatus {
         self.update_status_with_epsilon(SETTLE)
     }
@@ -186,7 +179,6 @@ pub struct SmoothOutputF64<'a, const MAX_BLOCKSIZE: usize> {
 }
 
 impl<'a, const MAX_BLOCKSIZE: usize> SmoothOutputF64<'a, MAX_BLOCKSIZE> {
-    #[inline]
     pub fn is_smoothing(&self) -> bool {
         self.status.is_active()
     }
@@ -241,12 +233,10 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
         self.status = SmoothStatus::Active;
     }
 
-    #[inline]
     pub fn dest(&self) -> f64 {
         self.input
     }
 
-    #[inline]
     pub fn output(&self) -> SmoothOutputF64<MAX_BLOCKSIZE> {
         SmoothOutputF64 {
             values: &self.output,
@@ -254,7 +244,6 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
         }
     }
 
-    #[inline]
     pub fn current_value(&self) -> (f64, SmoothStatus) {
         (self.last_output, self.status)
     }
@@ -283,7 +272,7 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
             return;
         }
 
-        let nframes = frames.0.min(MAX_BLOCKSIZE);
+        let nframes = frames.compiler_hint_min(MAX_BLOCKSIZE);
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
@@ -295,7 +284,6 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
         self.last_output = self.output[nframes - 1];
     }
 
-    #[inline]
     pub fn is_active(&self) -> bool {
         self.status.is_active()
     }
@@ -307,7 +295,6 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
         self.a = 1.0f64 - self.b;
     }
 
-    #[inline]
     pub fn update_status(&mut self) -> SmoothStatus {
         self.update_status_with_epsilon(SETTLE as f64)
     }

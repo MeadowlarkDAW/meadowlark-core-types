@@ -46,7 +46,7 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     /// The portion of data not in the given range will be unitialized, so undefined behavior
     /// may occur if you try to read any of that data without writing to it first.
     pub unsafe fn new_uninit_after_frames(frames: Frames) -> Self {
-        let frames = frames.0.min(MAX_BLOCKSIZE);
+        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
         let mut buf: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
 
         let buf_part = &mut buf[0..frames];
@@ -75,15 +75,13 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     }
 
     /// Clear all samples in the buffer to 0.
-    #[inline]
     pub fn clear(&mut self) {
         self.buf.fill(T::default());
     }
 
     /// Clear a number of frames in the buffer to 0.
-    #[inline]
     pub fn clear_frames(&mut self, frames: Frames) {
-        let frames = frames.0.min(MAX_BLOCKSIZE);
+        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
         let buf_part = &mut self.buf[0..frames];
         buf_part.fill(T::default());
     }
@@ -92,22 +90,19 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     ///
     /// ## Panics
     /// This will panic if the given range lies outside the valid range `[0, N)`.
-    #[inline]
     pub fn clear_range(&mut self, range: Range<usize>) {
         let buf_part = &mut self.buf[range];
         buf_part.fill(T::default());
     }
 
     /// Copy all frames from `src` to this buffer.
-    #[inline]
     pub fn copy_from(&mut self, src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>) {
         self.buf.copy_from_slice(&src.buf);
     }
 
     /// Copy the given number of `frames` from `src` to this buffer.
-    #[inline]
     pub fn copy_frames_from(&mut self, src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>, frames: Frames) {
-        let frames = frames.0.min(MAX_BLOCKSIZE);
+        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
         self.buf[0..frames].copy_from_slice(&src.buf[0..frames]);
     }
 }
@@ -182,7 +177,7 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     /// The portion of data not in the given range will be unitialized, so undefined behavior
     /// may occur if you try to read any of that data without writing to it first.
     pub unsafe fn new_uninit_after_frames(frames: Frames) -> Self {
-        let frames = frames.0.min(MAX_BLOCKSIZE);
+        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
         let mut buf_left: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
         let mut buf_right: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
 
@@ -223,16 +218,14 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     }
 
     /// Clear all samples in the buffer to 0.
-    #[inline]
     pub fn clear(&mut self) {
         self.left.fill(T::default());
         self.right.fill(T::default());
     }
 
     /// Clear a number of frames in the buffer to 0.
-    #[inline]
     pub fn clear_frames(&mut self, frames: Frames) {
-        let frames = frames.0.min(MAX_BLOCKSIZE);
+        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
         let buf_left_part = &mut self.left[0..frames];
         let buf_right_part = &mut self.right[0..frames];
         buf_left_part.fill(T::default());
@@ -243,7 +236,6 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     ///
     /// ## Panics
     /// This will panic if the given range lies outside the valid range `[0, N)`.
-    #[inline]
     pub fn clear_range(&mut self, range: Range<usize>) {
         let buf_left_part = &mut self.left[range.clone()];
         let buf_right_part = &mut self.right[range];
@@ -252,22 +244,19 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     }
 
     /// Copy all frames from `src` to this buffer.
-    #[inline]
     pub fn copy_from(&mut self, src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>) {
         self.left.copy_from_slice(&src.left);
         self.right.copy_from_slice(&src.right);
     }
 
     /// Copy the given number of `frames` from `src` to this buffer.
-    #[inline]
     pub fn copy_frames_from(&mut self, src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>, frames: Frames) {
-        let frames = frames.0.min(MAX_BLOCKSIZE);
+        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
         self.left[0..frames].copy_from_slice(&src.left[0..frames]);
         self.right[0..frames].copy_from_slice(&src.right[0..frames]);
     }
 
     /// Return a mutable reference to the left and right channels (in that order).
-    #[inline]
     pub fn left_right_mut(&mut self) -> (&mut [T; MAX_BLOCKSIZE], &mut [T; MAX_BLOCKSIZE]) {
         (&mut self.left, &mut self.right)
     }

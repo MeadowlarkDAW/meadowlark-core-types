@@ -68,7 +68,6 @@ where
         self.fade.set_speed(sample_rate, seconds);
     }
 
-    #[inline]
     pub fn output(&self) -> DeclickOutput<T, MAX_BLOCKSIZE> {
         let fade = self.fade.output();
 
@@ -81,14 +80,12 @@ where
         }
     }
 
-    #[inline]
     pub fn current_value(&self) -> (&T, SmoothStatus) {
         let (_, status) = self.fade.current_value();
 
         (&self.current, status)
     }
 
-    #[inline]
     pub fn dest(&self) -> &T {
         self.staged
             .as_ref()
@@ -96,12 +93,10 @@ where
             .unwrap_or(&self.current)
     }
 
-    #[inline]
     pub fn is_active(&self) -> bool {
         self.next.is_some()
     }
 
-    #[inline]
     pub fn process(&mut self, frames: Frames) {
         self.fade.process(frames);
     }
