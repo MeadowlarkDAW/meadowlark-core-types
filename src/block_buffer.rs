@@ -75,14 +75,20 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     }
 
     /// Clear all samples in the buffer to 0.
+    #[inline]
     pub fn clear(&mut self) {
         self.buf.fill(T::default());
     }
 
     /// Clear a number of frames in the buffer to 0.
+    #[inline]
     pub fn clear_frames(&mut self, proc_frames: ProcFrames<MAX_BLOCKSIZE>) {
-        let frames = proc_frames.compiler_hint_frames();
-        let buf_part = &mut self.buf[0..frames];
+        // This is safe because `proc_frames.unchecked_frames()` is always less than or
+        // equal to MAX_BLOCKSIZE.
+        let buf_part = unsafe {
+            std::slice::from_raw_parts_mut(self.buf.as_mut_ptr(), proc_frames.unchecked_frames())
+        };
+
         buf_part.fill(T::default());
     }
 
@@ -96,18 +102,29 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     }
 
     /// Copy all frames from `src` to this buffer.
+    #[inline]
     pub fn copy_from(&mut self, src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>) {
         self.buf.copy_from_slice(&src.buf);
     }
 
     /// Copy the given number of `frames` from `src` to this buffer.
+    #[inline]
     pub fn copy_frames_from(
         &mut self,
         src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>,
         proc_frames: ProcFrames<MAX_BLOCKSIZE>,
     ) {
-        let frames = proc_frames.compiler_hint_frames();
-        self.buf[0..frames].copy_from_slice(&src.buf[0..frames]);
+        // This is safe because `proc_frames.unchecked_frames()` is always less than or
+        // equal to MAX_BLOCKSIZE, and two buffers will never have overlapping memory.
+        unsafe {
+            std::ptr::copy_nonoverlapping::<T>(
+                src.buf.as_ptr(),
+                self.buf.as_mut_ptr(),
+                proc_frames.unchecked_frames(),
+            );
+        }
+
+        //self.buf[0..frames].copy_from_slice(&src.buf[0..frames]);
     }
 }
 
@@ -222,16 +239,30 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     }
 
     /// Clear all samples in the buffer to 0.
+    #[inline]
     pub fn clear(&mut self) {
         self.left.fill(T::default());
         self.right.fill(T::default());
     }
 
     /// Clear a number of frames in the buffer to 0.
+    #[inline]
     pub fn clear_frames(&mut self, proc_frames: ProcFrames<MAX_BLOCKSIZE>) {
-        let frames = proc_frames.compiler_hint_frames();
-        let buf_left_part = &mut self.left[0..frames];
-        let buf_right_part = &mut self.right[0..frames];
+        // This is safe because `proc_frames.unchecked_frames()` is always less than or
+        // equal to MAX_BLOCKSIZE.
+        let (buf_left_part, buf_right_part) = unsafe {
+            (
+                std::slice::from_raw_parts_mut(
+                    self.left.as_mut_ptr(),
+                    proc_frames.unchecked_frames(),
+                ),
+                std::slice::from_raw_parts_mut(
+                    self.right.as_mut_ptr(),
+                    proc_frames.unchecked_frames(),
+                ),
+            )
+        };
+
         buf_left_part.fill(T::default());
         buf_right_part.fill(T::default());
     }
@@ -248,20 +279,36 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     }
 
     /// Copy all frames from `src` to this buffer.
+    #[inline]
     pub fn copy_from(&mut self, src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>) {
         self.left.copy_from_slice(&src.left);
         self.right.copy_from_slice(&src.right);
     }
 
     /// Copy the given number of `frames` from `src` to this buffer.
+    #[inline]
     pub fn copy_frames_from(
         &mut self,
         src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>,
         proc_frames: ProcFrames<MAX_BLOCKSIZE>,
     ) {
-        let frames = proc_frames.compiler_hint_frames();
-        self.left[0..frames].copy_from_slice(&src.left[0..frames]);
-        self.right[0..frames].copy_from_slice(&src.right[0..frames]);
+        // This is safe because `proc_frames.unchecked_frames()` is always less than or
+        // equal to MAX_BLOCKSIZE, and two buffers will never have overlapping memory.
+        unsafe {
+            std::ptr::copy_nonoverlapping::<T>(
+                src.left.as_ptr(),
+                self.left.as_mut_ptr(),
+                proc_frames.unchecked_frames(),
+            );
+            std::ptr::copy_nonoverlapping::<T>(
+                src.right.as_ptr(),
+                self.right.as_mut_ptr(),
+                proc_frames.unchecked_frames(),
+            );
+        }
+
+        //self.left[0..frames].copy_from_slice(&src.left[0..frames]);
+        //self.right[0..frames].copy_from_slice(&src.right[0..frames]);
     }
 
     /// Return a mutable reference to the left and right channels (in that order).

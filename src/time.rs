@@ -1116,8 +1116,8 @@ impl<const MAX_BLOCKSIZE: usize> ProcFrames<MAX_BLOCKSIZE> {
     /// method inside loops.)
     ///
     /// This is also hints to the compiler that the number of frames is indeed less than
-    /// MAX_BLOCKSIZE, allowing the compiler to safely elid all bounds checking on
-    /// constant-sized buffers with length MAX_BLOCKSIZE (although make sure your buffers
+    /// or equal to MAX_BLOCKSIZE, allowing the compiler to safely elid all bounds checking
+    /// on constant-sized buffers with length MAX_BLOCKSIZE (although make sure your buffers
     /// actually do use the same MAX_BLOCKSIZE constant as the process).
     ///
     /// For example:
@@ -1130,8 +1130,9 @@ impl<const MAX_BLOCKSIZE: usize> ProcFrames<MAX_BLOCKSIZE> {
     /// // Some buffer with a constant size.
     /// let mut buffer: MonoBlockBuffer<f32, MAX_BLOCKSIZE> = MonoBlockBuffer::new();
     ///
-    /// // We know that `proc_frames` will always be less than MAX_BLOCKSIZE, but the compiler
-    /// // doesn't. So hint to the compiler that it is safe to elid all bounds checking.
+    /// // We know that `proc_frames` will always be less than or equal to MAX_BLOCKSIZE,
+    /// // but the compiler doesn't. So hint to the compiler that it is safe to elid all
+    /// // bounds checking.
     /// let frames = proc_frames.compiler_hint_frames();
     ///
     /// for i in 0..frames {
@@ -1141,6 +1142,42 @@ impl<const MAX_BLOCKSIZE: usize> ProcFrames<MAX_BLOCKSIZE> {
     #[inline(always)]
     pub fn compiler_hint_frames(&self) -> usize {
         self.0.min(MAX_BLOCKSIZE)
+    }
+
+    /// Returns the number of frames as a `usize` value without hinting to the compiler
+    /// that the number of frames is less than or equal to MAX_BLOCKSIZE (even though
+    /// we know this to always be true).
+    ///
+    /// Note you probably want to use `compiler_hint_frames()` instead (unless you want
+    /// to "uglier" unsafe code as the way to elid bounds checking on indexing
+    /// constant-sized buffers with length MAX_BLOCKSIZE). All this really saves in
+    /// terms of performance is a single `min()` check anyway.
+    ///
+    /// If you still want to use this method, here is an example of how to use it:
+    /// ```rust
+    /// # use rusty_daw_core::{ProcFrames, block_buffer::MonoBlockBuffer};
+    /// # let proc_frames = ProcFrames::<MAX_BLOCKSIZE>::new(100);
+    /// // A global constant in your application.
+    /// const MAX_BLOCKSIZE: usize = 128;
+    ///
+    /// // Some buffer with a constant size.
+    /// let mut buffer: MonoBlockBuffer<f32, MAX_BLOCKSIZE> = MonoBlockBuffer::new();
+    ///
+    /// // We know that `proc_frames` will always be less than or equal to MAX_BLOCKSIZE,
+    /// // but the compiler doesn't.
+    /// let frames = proc_frames.unchecked_frames();
+    ///
+    /// for i in 0..frames {
+    ///     // This is safe because `proc_frames.unchecked_frames()` is always less than or
+    ///     // equal to MAX_BLOCKSIZE.
+    ///     unsafe {
+    ///         *buffer.buf.get_unchecked_mut(i) += 1.0;
+    ///     }
+    /// }
+    /// ```
+    #[inline(always)]
+    pub fn unchecked_frames(&self) -> usize {
+        self.0
     }
 
     /// Convert to the corresponding time length in [`SuperFrames`] from the given [`SampleRate`].

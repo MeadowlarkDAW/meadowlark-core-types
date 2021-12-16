@@ -126,16 +126,27 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
             return;
         }
 
-        let frames = proc_frames.compiler_hint_frames();
+        let frames = proc_frames.unchecked_frames();
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
 
         for i in 1..frames {
+            // This is safe because `proc_frames.unchecked_frames()` is always less than or
+            // equal to MAX_BLOCKSIZE.
+            unsafe {
+                *self.output.get_unchecked_mut(i) =
+                    input + (*self.output.get_unchecked(i - 1) * self.b);
+            }
+
             self.output[i] = input + (self.output[i - 1] * self.b);
         }
 
-        self.last_output = self.output[frames - 1];
+        // This is safe because `proc_frames.unchecked_frames()` is always less than or
+        // equal to MAX_BLOCKSIZE.
+        unsafe {
+            self.last_output = *self.output.get_unchecked(frames - 1);
+        }
     }
 
     pub fn is_active(&self) -> bool {
@@ -272,16 +283,27 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
             return;
         }
 
-        let frames = proc_frames.compiler_hint_frames();
+        let frames = proc_frames.unchecked_frames();
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
 
         for i in 1..frames {
+            // This is safe because `proc_frames.unchecked_frames()` is always less than or
+            // equal to MAX_BLOCKSIZE.
+            unsafe {
+                *self.output.get_unchecked_mut(i) =
+                    input + (*self.output.get_unchecked(i - 1) * self.b);
+            }
+
             self.output[i] = input + (self.output[i - 1] * self.b);
         }
 
-        self.last_output = self.output[frames - 1];
+        // This is safe because `proc_frames.unchecked_frames()` is always less than or
+        // equal to MAX_BLOCKSIZE.
+        unsafe {
+            self.last_output = *self.output.get_unchecked(frames - 1);
+        }
     }
 
     pub fn is_active(&self) -> bool {
