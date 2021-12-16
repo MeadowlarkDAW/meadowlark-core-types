@@ -10,7 +10,7 @@ use std::fmt;
 use std::ops;
 use std::slice;
 
-use super::{Frames, SampleRate, Seconds};
+use super::{ProcFrames, SampleRate, Seconds};
 
 const SETTLE: f32 = 0.00001f32;
 
@@ -121,21 +121,21 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
         self.status
     }
 
-    pub fn process(&mut self, frames: Frames) {
+    pub fn process(&mut self, proc_frames: ProcFrames<MAX_BLOCKSIZE>) {
         if self.status != SmoothStatus::Active {
             return;
         }
 
-        let nframes = frames.compiler_hint_min(MAX_BLOCKSIZE);
+        let frames = proc_frames.compiler_hint_frames();
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
 
-        for i in 1..nframes {
+        for i in 1..frames {
             self.output[i] = input + (self.output[i - 1] * self.b);
         }
 
-        self.last_output = self.output[nframes - 1];
+        self.last_output = self.output[frames - 1];
     }
 
     pub fn is_active(&self) -> bool {
@@ -267,21 +267,21 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
         self.status
     }
 
-    pub fn process(&mut self, frames: Frames) {
+    pub fn process(&mut self, proc_frames: ProcFrames<MAX_BLOCKSIZE>) {
         if self.status != SmoothStatus::Active {
             return;
         }
 
-        let nframes = frames.compiler_hint_min(MAX_BLOCKSIZE);
+        let frames = proc_frames.compiler_hint_frames();
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
 
-        for i in 1..nframes {
+        for i in 1..frames {
             self.output[i] = input + (self.output[i - 1] * self.b);
         }
 
-        self.last_output = self.output[nframes - 1];
+        self.last_output = self.output[frames - 1];
     }
 
     pub fn is_active(&self) -> bool {

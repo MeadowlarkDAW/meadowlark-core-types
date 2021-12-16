@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 use std::ops::Range;
 
-use super::Frames;
+use super::ProcFrames;
 
 /// An audio buffer with a single channel.
 ///
@@ -45,8 +45,8 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     /// ## Undefined behavior
     /// The portion of data not in the given range will be unitialized, so undefined behavior
     /// may occur if you try to read any of that data without writing to it first.
-    pub unsafe fn new_uninit_after_frames(frames: Frames) -> Self {
-        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
+    pub unsafe fn new_uninit_after_frames(proc_frames: ProcFrames<MAX_BLOCKSIZE>) -> Self {
+        let frames = proc_frames.compiler_hint_frames();
         let mut buf: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
 
         let buf_part = &mut buf[0..frames];
@@ -80,8 +80,8 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     }
 
     /// Clear a number of frames in the buffer to 0.
-    pub fn clear_frames(&mut self, frames: Frames) {
-        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
+    pub fn clear_frames(&mut self, proc_frames: ProcFrames<MAX_BLOCKSIZE>) {
+        let frames = proc_frames.compiler_hint_frames();
         let buf_part = &mut self.buf[0..frames];
         buf_part.fill(T::default());
     }
@@ -101,8 +101,12 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     }
 
     /// Copy the given number of `frames` from `src` to this buffer.
-    pub fn copy_frames_from(&mut self, src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>, frames: Frames) {
-        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
+    pub fn copy_frames_from(
+        &mut self,
+        src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>,
+        proc_frames: ProcFrames<MAX_BLOCKSIZE>,
+    ) {
+        let frames = proc_frames.compiler_hint_frames();
         self.buf[0..frames].copy_from_slice(&src.buf[0..frames]);
     }
 }
@@ -176,8 +180,8 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     /// ## Undefined behavior
     /// The portion of data not in the given range will be unitialized, so undefined behavior
     /// may occur if you try to read any of that data without writing to it first.
-    pub unsafe fn new_uninit_after_frames(frames: Frames) -> Self {
-        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
+    pub unsafe fn new_uninit_after_frames(proc_frames: ProcFrames<MAX_BLOCKSIZE>) -> Self {
+        let frames = proc_frames.compiler_hint_frames();
         let mut buf_left: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
         let mut buf_right: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
 
@@ -224,8 +228,8 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     }
 
     /// Clear a number of frames in the buffer to 0.
-    pub fn clear_frames(&mut self, frames: Frames) {
-        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
+    pub fn clear_frames(&mut self, proc_frames: ProcFrames<MAX_BLOCKSIZE>) {
+        let frames = proc_frames.compiler_hint_frames();
         let buf_left_part = &mut self.left[0..frames];
         let buf_right_part = &mut self.right[0..frames];
         buf_left_part.fill(T::default());
@@ -250,8 +254,12 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     }
 
     /// Copy the given number of `frames` from `src` to this buffer.
-    pub fn copy_frames_from(&mut self, src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>, frames: Frames) {
-        let frames = frames.compiler_hint_min(MAX_BLOCKSIZE);
+    pub fn copy_frames_from(
+        &mut self,
+        src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>,
+        proc_frames: ProcFrames<MAX_BLOCKSIZE>,
+    ) {
+        let frames = proc_frames.compiler_hint_frames();
         self.left[0..frames].copy_from_slice(&src.left[0..frames]);
         self.right[0..frames].copy_from_slice(&src.right[0..frames]);
     }

@@ -13,7 +13,9 @@ use super::decibel::{
     coeff_to_db_clamped_neg_90_db_f32, coeff_to_db_clamped_neg_90_db_f64,
     db_to_coeff_clamped_neg_90_db_f32, db_to_coeff_clamped_neg_90_db_f64,
 };
-use super::{Frames, SampleRate, Seconds, SmoothF32, SmoothF64, SmoothOutputF32, SmoothOutputF64};
+use super::{
+    ProcFrames, SampleRate, Seconds, SmoothF32, SmoothF64, SmoothOutputF32, SmoothOutputF64,
+};
 
 /// A good default value to use as `smooth_secs` parameter when creating a [`ParamF32`]/[`ParamF64`].
 ///
@@ -318,7 +320,10 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     }
 
     /// Get the smoothed buffer of values for use in DSP.
-    pub fn smoothed(&mut self, frames: Frames) -> SmoothOutputF32<MAX_BLOCKSIZE> {
+    pub fn smoothed(
+        &mut self,
+        proc_frames: ProcFrames<MAX_BLOCKSIZE>,
+    ) -> SmoothOutputF32<MAX_BLOCKSIZE> {
         let new_normalized = self.shared_normalized.get();
         if self.normalized != new_normalized {
             self.normalized = new_normalized;
@@ -332,7 +337,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
             self.smoothed.set(self.value);
         }
 
-        self.smoothed.process(frames);
+        self.smoothed.process(proc_frames);
         self.smoothed.update_status();
 
         self.smoothed.output()
@@ -817,7 +822,10 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     }
 
     /// Get the smoothed buffer of values for use in DSP.
-    pub fn smoothed(&mut self, frames: Frames) -> SmoothOutputF64<MAX_BLOCKSIZE> {
+    pub fn smoothed(
+        &mut self,
+        proc_frames: ProcFrames<MAX_BLOCKSIZE>,
+    ) -> SmoothOutputF64<MAX_BLOCKSIZE> {
         let new_normalized = self.shared_normalized.get();
         if self.normalized != new_normalized {
             self.normalized = new_normalized;
@@ -831,7 +839,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
             self.smoothed.set(self.value);
         }
 
-        self.smoothed.process(frames);
+        self.smoothed.process(proc_frames);
         self.smoothed.update_status();
 
         self.smoothed.output()
