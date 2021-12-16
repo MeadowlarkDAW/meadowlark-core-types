@@ -8,7 +8,7 @@
 
 use std::sync::Arc;
 
-use super::atomic_float::{AtomicF32, AtomicF64};
+use super::atomic::{AtomicF32, AtomicF64};
 use super::decibel::{
     coeff_to_db_clamped_neg_90_db_f32, coeff_to_db_clamped_neg_90_db_f64,
     db_to_coeff_clamped_neg_90_db_f32, db_to_coeff_clamped_neg_90_db_f64,

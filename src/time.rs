@@ -134,7 +134,7 @@ impl MusicalTime {
     pub fn new(beats: u32, super_beats: u32) -> Self {
         Self {
             beats,
-            super_beats: super_beats.max(SUPER_UNITS - 1),
+            super_beats: super_beats.min(SUPER_UNITS - 1),
         }
     }
 
@@ -172,7 +172,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: half_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: half_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -184,7 +184,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: quarter_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: quarter_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -196,7 +196,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: eighth_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: eighth_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -208,7 +208,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: sixteenth_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: sixteenth_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -220,7 +220,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: _32nd_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: _32nd_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -232,7 +232,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: _64th_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: _64th_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -244,7 +244,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: _128th_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: _128th_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -256,7 +256,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: third_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: third_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -268,7 +268,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: fifth_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: fifth_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -280,7 +280,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: fifth_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: fifth_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -292,7 +292,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: seventh_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: seventh_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -304,7 +304,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: ninth_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: ninth_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -316,7 +316,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: tenth_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: tenth_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -328,7 +328,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: twelth_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: twelth_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
@@ -340,7 +340,7 @@ impl MusicalTime {
 
         Self {
             beats,
-            super_beats: _24th_beats.max(N - 1) * (SUPER_UNITS / N),
+            super_beats: _24th_beats.min(N - 1) * (SUPER_UNITS / N),
         }
     }
 
