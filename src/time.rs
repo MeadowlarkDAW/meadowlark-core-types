@@ -3,7 +3,7 @@
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-/// This number was chosen because it is nicely divisible by a whole slew of factors
+/// (`508,032,000`) This number was chosen because it is nicely divisible by a whole slew of factors
 /// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
 /// and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000,
 /// 176400, and 192000`. This ensures that any recording of note or sample data in this format
@@ -1105,7 +1105,7 @@ impl DivAssign<Seconds> for Seconds {
 pub struct ProcFrames<const MAX_BLOCKSIZE: usize>(usize);
 
 impl<const MAX_BLOCKSIZE: usize> ProcFrames<MAX_BLOCKSIZE> {
-    /// * frames - This will be clamped to the range `[1, MAX_BLOCKSIZE]`.
+    /// * frames - This will be clamped to the range `[0, MAX_BLOCKSIZE]`.
     pub fn new(frames: usize) -> Self {
         Self(frames.min(MAX_BLOCKSIZE))
     }
