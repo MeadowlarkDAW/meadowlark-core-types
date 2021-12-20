@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::{MusicalTime, SuperFrames};
+use crate::MusicalTime;
 
 /// Simple atomic `MusicalTime` variable with relaxed ordering.
 pub struct AtomicMusicalTime {
@@ -84,61 +84,6 @@ impl From<AtomicMusicalTime> for MusicalTime {
     }
 }
 
-/// Simple atomic `SuperFrames` variable with relaxed ordering.
-pub struct AtomicSuperFrames {
-    atomic: AtomicU64,
-}
-
-impl AtomicSuperFrames {
-    /// New atomic musical time with initial value `value`.
-    pub fn new(super_frames: SuperFrames) -> AtomicSuperFrames {
-        AtomicSuperFrames {
-            atomic: AtomicU64::new(u32x2_to_u64(
-                super_frames.seconds_u32(),
-                super_frames.super_frames(),
-            )),
-        }
-    }
-
-    /// Get the current value of the atomic super-frames.
-    pub fn get(&self) -> SuperFrames {
-        let (seconds, super_frames) = u64_to_u32x2(self.atomic.load(Ordering::Relaxed));
-        SuperFrames::new(seconds, super_frames)
-    }
-
-    /// Set the value of the atomic super-frames to `super_frames`.
-    pub fn set(&self, super_frames: SuperFrames) {
-        self.atomic.store(
-            u32x2_to_u64(super_frames.seconds_u32(), super_frames.super_frames()),
-            Ordering::Relaxed,
-        )
-    }
-}
-
-impl Default for AtomicSuperFrames {
-    fn default() -> Self {
-        AtomicSuperFrames::new(SuperFrames::default())
-    }
-}
-
-impl std::fmt::Debug for AtomicSuperFrames {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(&self.get(), f)
-    }
-}
-
-impl From<SuperFrames> for AtomicSuperFrames {
-    fn from(value: SuperFrames) -> Self {
-        AtomicSuperFrames::new(value)
-    }
-}
-
-impl From<AtomicSuperFrames> for SuperFrames {
-    fn from(value: AtomicSuperFrames) -> Self {
-        value.get()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -157,21 +102,5 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(1));
 
         assert_eq!(atomic_musical_time.get(), musical_time_2);
-    }
-
-    #[test]
-    fn test_atomic_super_frames() {
-        let super_frames_1 = SuperFrames::new(4578749, 12390);
-        let super_frames_2 = SuperFrames::new(5720495, 45781);
-
-        let atomic_super_frames = AtomicSuperFrames::new(super_frames_1);
-
-        assert_eq!(atomic_super_frames.get(), super_frames_1);
-
-        atomic_super_frames.set(super_frames_2);
-
-        std::thread::sleep(std::time::Duration::from_millis(1));
-
-        assert_eq!(atomic_super_frames.get(), super_frames_2);
     }
 }

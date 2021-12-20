@@ -878,27 +878,14 @@ impl Seconds {
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then the `SuperFrames`'s values will be 0.
+    /// If the seconds value is negative, then the `SuperFrames`'s value will be 0.
     ///
     /// [`SuperFrames`]: struct.Frames.html
     pub fn to_nearest_super_frame_round(&self) -> SuperFrames {
         if self.0 > 0.0 {
-            let mut seconds = self.0.floor() as u32;
-            let mut super_frames = (self.0.fract() * f64::from(SUPER_UNITS)).round() as u32;
-            if super_frames >= SUPER_UNITS {
-                seconds += 1;
-                super_frames = 0;
-            }
-
-            SuperFrames {
-                seconds,
-                super_frames,
-            }
+            SuperFrames((self.0 * f64::from(SUPER_UNITS)).round() as u64)
         } else {
-            SuperFrames {
-                seconds: 0,
-                super_frames: 0,
-            }
+            SuperFrames(0)
         }
     }
 
@@ -912,22 +899,9 @@ impl Seconds {
     /// [`SuperFrames`]: struct.Frames.html
     pub fn to_nearest_super_frame_floor(&self) -> SuperFrames {
         if self.0 > 0.0 {
-            let mut seconds = self.0.floor() as u32;
-            let mut super_frames = (self.0.fract() * f64::from(SUPER_UNITS)).floor() as u32;
-            if super_frames >= SUPER_UNITS {
-                seconds += 1;
-                super_frames = 0;
-            }
-
-            SuperFrames {
-                seconds,
-                super_frames,
-            }
+            SuperFrames((self.0 * f64::from(SUPER_UNITS)).floor() as u64)
         } else {
-            SuperFrames {
-                seconds: 0,
-                super_frames: 0,
-            }
+            SuperFrames(0)
         }
     }
 
@@ -941,22 +915,9 @@ impl Seconds {
     /// [`SuperFrames`]: struct.Frames.html
     pub fn to_nearest_super_frame_ceil(&self) -> SuperFrames {
         if self.0 > 0.0 {
-            let mut seconds = self.0.floor() as u32;
-            let mut super_frames = (self.0.fract() * f64::from(SUPER_UNITS)).ceil() as u32;
-            if super_frames >= SUPER_UNITS {
-                seconds += 1;
-                super_frames = 0;
-            }
-
-            SuperFrames {
-                seconds,
-                super_frames,
-            }
+            SuperFrames((self.0 * f64::from(SUPER_UNITS)).ceil() as u64)
         } else {
-            SuperFrames {
-                seconds: 0,
-                super_frames: 0,
-            }
+            SuperFrames(0)
         }
     }
 
@@ -971,30 +932,10 @@ impl Seconds {
     /// [`SuperFrames`]: struct.Frames.html
     pub fn to_sub_super_frames(&self) -> (SuperFrames, f64) {
         if self.0 > 0.0 {
-            let mut seconds = self.0.floor() as u32;
-
-            let super_frames_f64 = self.0.fract() * f64::from(SUPER_UNITS);
-            let mut super_frames = super_frames_f64.floor() as u32;
-            if super_frames >= SUPER_UNITS {
-                seconds += 1;
-                super_frames = 0;
-            }
-
-            (
-                SuperFrames {
-                    seconds,
-                    super_frames,
-                },
-                super_frames_f64.fract(),
-            )
+            let frames_f64 = self.0 * f64::from(SUPER_UNITS);
+            (SuperFrames(frames_f64.floor() as u64), frames_f64.fract())
         } else {
-            (
-                SuperFrames {
-                    seconds: 0,
-                    super_frames: 0,
-                },
-                0.0,
-            )
+            (SuperFrames(0), 0.0)
         }
     }
 
@@ -1308,6 +1249,12 @@ impl Sub<Frames> for Frames {
         Self(self.0 - rhs.0)
     }
 }
+impl Mul<u64> for Frames {
+    type Output = Self;
+    fn mul(self, rhs: u64) -> Self::Output {
+        Self(self.0 * rhs)
+    }
+}
 
 impl AddAssign<Frames> for Frames {
     fn add_assign(&mut self, other: Self) {
@@ -1319,44 +1266,30 @@ impl SubAssign<Frames> for Frames {
         self.0 -= other.0;
     }
 }
+impl MulAssign<u64> for Frames {
+    fn mul_assign(&mut self, other: u64) {
+        *self = *self * other
+    }
+}
 
 /// Unit of time length (of a single de-interleaved channel) in super-frames.
 ///
 /// A "super-frame" is a unit of time that is exactly 1 / 508,032,000 of a second.
 /// This number happens to be nicely divisible by all common sampling rates, allowing
 /// changes to sample rate in a project to be a lossless process.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct SuperFrames {
-    /// The time in seconds.
-    seconds: u32,
-
-    /// The number of super-frames (after the time in `self.seconds`). A "super-frame" is a unit of time
-    /// equal to 1 / 508,032,000 of a beat. This will auto-wrap so this will always be within the
-    /// range `[0, 508,032,000)`.
-    ///
-    /// This number was chosen because it is nicely divisible by a whole slew of factors
-    /// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
-    /// and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000,
-    /// 176400, and 192000`. This ensures that any recording of frame data in this format will always be
-    /// at-least sample-accurate.
-    super_frames: u32,
-}
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
+pub struct SuperFrames(pub u64);
 
 impl SuperFrames {
-    /// * `seconds` - The time in seconds.
-    /// * `super_frames` - The number of super-frames (after the time in `self.seconds`) (Note this value
-    /// will be constrained to the range `[0, 508,032,000)`).
+    /// * `super_frames` - The number of super-frames
     ///
     /// A "super-frame" is a unit of time equal to 1 / 508,032,000 of a second. This number was chosen
     /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
     /// 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, and 1920`, as well as common sampling
     /// rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`. This ensures that
     /// any recording of frame data in this format will always be at-least sample-accurate.
-    pub fn new(seconds: u32, super_frames: u32) -> Self {
-        Self {
-            seconds,
-            super_frames: super_frames.min(SUPER_UNITS - 1),
-        }
+    pub fn new(super_frames: u64) -> Self {
+        Self(super_frames)
     }
 
     /// Get the time in [`SuperFrames`] from the time in [`Seconds`]
@@ -1371,41 +1304,6 @@ impl SuperFrames {
         seconds.to_nearest_super_frame_round()
     }
 
-    /// The time in seconds (as a `u32` value floored to the nearest second)
-    pub fn seconds_u32(&self) -> u32 {
-        self.seconds
-    }
-
-    /// The number of super-frames (after the time in `self.seconds()`).
-    ///
-    /// A "super-frame" is a unit of time equal to 1 / 508,032,000 of a second. This number was chosen
-    /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
-    /// 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, and 1920`, as well as common sampling
-    /// rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`. This ensures that
-    /// any recording of frame data in this format will always be at-least sample-accurate.
-    ///
-    /// This value will always be in the range `[0, 508,032,000)`.
-    pub fn super_frames(&self) -> u32 {
-        self.super_frames
-    }
-
-    #[inline]
-    fn from_frames_constant<const SR: u32>(frames: Frames) -> Self {
-        let (seconds, fract_seconds) = if frames.0 < u64::from(SR) {
-            // More often then not we are dealing with a small number of frames here (i.e. at the top
-            // of the process loop), so we can just avoid the expensive modulo operator here.
-            (0, frames.0)
-        } else {
-            let seconds = frames.0 % u64::from(SR);
-            (seconds, frames.0 - (seconds * u64::from(SR)))
-        };
-
-        Self {
-            seconds: seconds as u32,
-            super_frames: (fract_seconds as u32) * (SUPER_UNITS / SR),
-        }
-    }
-
     /// Get the time in [`SuperFrames`] from the time in [`Frames`].
     ///
     /// This conversion **IS** lossless if the sample rate happens to be equal to one of the common
@@ -1416,41 +1314,15 @@ impl SuperFrames {
     /// [`Frames`]: struct.Frames.html
     pub fn from_frames(frames: Frames, sample_rate: SampleRate) -> Self {
         match sample_rate.0 as usize {
-            44100 => Self::from_frames_constant::<44100>(frames),
-            48000 => Self::from_frames_constant::<48000>(frames),
-            88200 => Self::from_frames_constant::<88200>(frames),
-            96000 => Self::from_frames_constant::<96000>(frames),
-            176400 => Self::from_frames_constant::<176400>(frames),
-            192000 => Self::from_frames_constant::<192000>(frames),
-            22050 => Self::from_frames_constant::<22050>(frames),
-            24000 => Self::from_frames_constant::<24000>(frames),
-            _ => {
-                let frames_f64 = frames.0 as f64;
-
-                let (mut seconds, fract_seconds) = if frames_f64 < sample_rate.0 {
-                    // More often then not we are dealing with a small number of frames here (i.e. at the top
-                    // of the process loop), so we can just avoid the expensive modulo operator here.
-                    (0, frames_f64)
-                } else {
-                    let seconds = frames_f64 % sample_rate.0;
-                    (
-                        seconds.floor() as u32,
-                        frames_f64 - (seconds * sample_rate.0),
-                    )
-                };
-
-                let mut super_frames =
-                    (fract_seconds * (f64::from(SUPER_UNITS) / sample_rate.0)).round() as u32;
-                if super_frames >= SUPER_UNITS {
-                    seconds += 1;
-                    super_frames -= SUPER_UNITS;
-                }
-
-                Self {
-                    seconds,
-                    super_frames,
-                }
-            }
+            44100 => Self(frames.0 * (u64::from(SUPER_UNITS) / 44100)),
+            48000 => Self(frames.0 * (u64::from(SUPER_UNITS) / 48000)),
+            88200 => Self(frames.0 * (u64::from(SUPER_UNITS) / 88200)),
+            96000 => Self(frames.0 * (u64::from(SUPER_UNITS) / 96000)),
+            176400 => Self(frames.0 * (u64::from(SUPER_UNITS) / 176400)),
+            192000 => Self(frames.0 * (u64::from(SUPER_UNITS) / 192000)),
+            22050 => Self(frames.0 * (u64::from(SUPER_UNITS) / 22050)),
+            24000 => Self(frames.0 * (u64::from(SUPER_UNITS) / 24000)),
+            _ => Self((frames.0 as f64 * (f64::from(SUPER_UNITS) / sample_rate.0)).round() as u64),
         }
     }
 
@@ -1460,7 +1332,7 @@ impl SuperFrames {
     ///
     /// [`Seconds`]: struct.Seconds.html
     pub fn to_seconds(&self) -> Seconds {
-        Seconds(f64::from(self.seconds) + (f64::from(self.super_frames) / f64::from(SUPER_UNITS)))
+        Seconds(self.0 as f64 / f64::from(SUPER_UNITS))
     }
 
     /// Convert to the corresponding [`MusicalTime`].
@@ -1504,78 +1376,30 @@ impl SuperFrames {
     pub fn to_nearest_frame_ceil(&self, sample_rate: SampleRate) -> Frames {
         self.to_seconds().to_nearest_frame_ceil(sample_rate)
     }
-
-    /// Try subtracting `rhs` from self. This will return `None` if the resulting value
-    /// is negative due to `rhs` being larger than self (overflow).
-    pub fn checked_sub(self, rhs: SuperFrames) -> Option<SuperFrames> {
-        if self >= rhs {
-            let mut seconds = self.seconds - rhs.seconds;
-            let super_frames = if self.super_frames < rhs.super_frames {
-                seconds -= 1;
-                SUPER_UNITS - (rhs.super_frames - self.super_frames)
-            } else {
-                self.super_frames - rhs.super_frames
-            };
-
-            Some(Self {
-                seconds,
-                super_frames,
-            })
-        } else {
-            None
-        }
-    }
 }
 
 impl Default for SuperFrames {
     fn default() -> Self {
-        SuperFrames {
-            seconds: 0,
-            super_frames: 0,
-        }
-    }
-}
-
-impl PartialOrd for SuperFrames {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self.seconds.partial_cmp(&other.seconds) {
-            Some(std::cmp::Ordering::Equal) => self.super_frames.partial_cmp(&other.super_frames),
-            res => res,
-        }
+        SuperFrames(0)
     }
 }
 
 impl Add<SuperFrames> for SuperFrames {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
-        let mut seconds = self.seconds + rhs.seconds;
-        let mut super_frames = self.super_frames + rhs.super_frames;
-        if super_frames >= SUPER_UNITS {
-            super_frames -= SUPER_UNITS;
-            seconds += 1;
-        }
-
-        Self {
-            seconds,
-            super_frames,
-        }
+        Self(self.0 + rhs.0)
     }
 }
-impl Mul<u32> for SuperFrames {
+impl Sub<SuperFrames> for SuperFrames {
     type Output = Self;
-    fn mul(self, rhs: u32) -> Self::Output {
-        let mut seconds = self.seconds * rhs;
-        let mut super_frames_u64 = u64::from(self.super_frames) * u64::from(rhs);
-        if super_frames_u64 >= u64::from(SUPER_UNITS) {
-            let additional_seconds = super_frames_u64 % u64::from(SUPER_UNITS);
-            seconds += additional_seconds as u32;
-            super_frames_u64 -= additional_seconds * u64::from(SUPER_UNITS);
-        }
-
-        Self {
-            seconds,
-            super_frames: super_frames_u64 as u32,
-        }
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+impl Mul<u64> for SuperFrames {
+    type Output = Self;
+    fn mul(self, rhs: u64) -> Self::Output {
+        Self(self.0 * rhs)
     }
 }
 
@@ -1584,8 +1408,13 @@ impl AddAssign<SuperFrames> for SuperFrames {
         *self = *self + other
     }
 }
-impl MulAssign<u32> for SuperFrames {
-    fn mul_assign(&mut self, other: u32) {
+impl SubAssign<SuperFrames> for SuperFrames {
+    fn sub_assign(&mut self, other: Self) {
+        *self = *self - other
+    }
+}
+impl MulAssign<u64> for SuperFrames {
+    fn mul_assign(&mut self, other: u64) {
         *self = *self * other
     }
 }
