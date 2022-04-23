@@ -1,8 +1,6 @@
 use std::mem::MaybeUninit;
 use std::ops::Range;
 
-use super::ProcFrames;
-
 /// An audio buffer with a single channel.
 ///
 /// This has a constant number of frames (`MAX_BLOCKSIZE`), so this can be allocated on
@@ -45,8 +43,8 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
     /// ## Undefined behavior
     /// The portion of data not in the given range will be unitialized, so undefined behavior
     /// may occur if you try to read any of that data without writing to it first.
-    pub unsafe fn new_uninit_after_frames(proc_frames: ProcFrames<MAX_BLOCKSIZE>) -> Self {
-        let frames = proc_frames.compiler_hint_frames();
+    pub unsafe fn new_uninit_after_frames(frames: usize) -> Self {
+        let frames = frames.min(MAX_BLOCKSIZE);
         let mut buf: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
 
         let buf_part = &mut buf[0..frames];
@@ -82,14 +80,9 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
 
     /// Clear a number of frames in the buffer to 0.
     #[inline]
-    pub fn clear_frames(&mut self, proc_frames: ProcFrames<MAX_BLOCKSIZE>) {
-        // This is safe because `proc_frames.unchecked_frames()` is always less than or
-        // equal to MAX_BLOCKSIZE.
-        let buf_part = unsafe {
-            std::slice::from_raw_parts_mut(self.buf.as_mut_ptr(), proc_frames.unchecked_frames())
-        };
-
-        buf_part.fill(T::default());
+    pub fn clear_frames(&mut self, frames: usize) {
+        let frames = frames.min(MAX_BLOCKSIZE);
+        self.buf[0..frames].fill(T::default());
     }
 
     /// Clear a range in the buffer to 0.
@@ -109,22 +102,9 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> MonoBlockBuffer<T, M
 
     /// Copy the given number of `frames` from `src` to this buffer.
     #[inline]
-    pub fn copy_frames_from(
-        &mut self,
-        src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>,
-        proc_frames: ProcFrames<MAX_BLOCKSIZE>,
-    ) {
-        // This is safe because `proc_frames.unchecked_frames()` is always less than or
-        // equal to MAX_BLOCKSIZE, and two buffers will never have overlapping memory.
-        unsafe {
-            std::ptr::copy_nonoverlapping::<T>(
-                src.buf.as_ptr(),
-                self.buf.as_mut_ptr(),
-                proc_frames.unchecked_frames(),
-            );
-        }
-
-        //self.buf[0..frames].copy_from_slice(&src.buf[0..frames]);
+    pub fn copy_frames_from(&mut self, src: &MonoBlockBuffer<T, MAX_BLOCKSIZE>, frames: usize) {
+        let frames = frames.min(MAX_BLOCKSIZE);
+        self.buf[0..frames].copy_from_slice(&src.buf[0..frames]);
     }
 }
 
@@ -197,8 +177,8 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
     /// ## Undefined behavior
     /// The portion of data not in the given range will be unitialized, so undefined behavior
     /// may occur if you try to read any of that data without writing to it first.
-    pub unsafe fn new_uninit_after_frames(proc_frames: ProcFrames<MAX_BLOCKSIZE>) -> Self {
-        let frames = proc_frames.compiler_hint_frames();
+    pub unsafe fn new_uninit_after_frames(frames: usize) -> Self {
+        let frames = frames.min(MAX_BLOCKSIZE);
         let mut buf_left: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
         let mut buf_right: [T; MAX_BLOCKSIZE] = MaybeUninit::uninit().assume_init();
 
@@ -247,24 +227,10 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
 
     /// Clear a number of frames in the buffer to 0.
     #[inline]
-    pub fn clear_frames(&mut self, proc_frames: ProcFrames<MAX_BLOCKSIZE>) {
-        // This is safe because `proc_frames.unchecked_frames()` is always less than or
-        // equal to MAX_BLOCKSIZE.
-        let (buf_left_part, buf_right_part) = unsafe {
-            (
-                std::slice::from_raw_parts_mut(
-                    self.left.as_mut_ptr(),
-                    proc_frames.unchecked_frames(),
-                ),
-                std::slice::from_raw_parts_mut(
-                    self.right.as_mut_ptr(),
-                    proc_frames.unchecked_frames(),
-                ),
-            )
-        };
-
-        buf_left_part.fill(T::default());
-        buf_right_part.fill(T::default());
+    pub fn clear_frames(&mut self, frames: usize) {
+        let frames = frames.min(MAX_BLOCKSIZE);
+        self.left[0..frames].fill(T::default());
+        self.right[0..frames].fill(T::default());
     }
 
     /// Clear a range in the buffer to 0.
@@ -287,28 +253,10 @@ impl<T: Default + Copy + Clone, const MAX_BLOCKSIZE: usize> StereoBlockBuffer<T,
 
     /// Copy the given number of `frames` from `src` to this buffer.
     #[inline]
-    pub fn copy_frames_from(
-        &mut self,
-        src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>,
-        proc_frames: ProcFrames<MAX_BLOCKSIZE>,
-    ) {
-        // This is safe because `proc_frames.unchecked_frames()` is always less than or
-        // equal to MAX_BLOCKSIZE, and two buffers will never have overlapping memory.
-        unsafe {
-            std::ptr::copy_nonoverlapping::<T>(
-                src.left.as_ptr(),
-                self.left.as_mut_ptr(),
-                proc_frames.unchecked_frames(),
-            );
-            std::ptr::copy_nonoverlapping::<T>(
-                src.right.as_ptr(),
-                self.right.as_mut_ptr(),
-                proc_frames.unchecked_frames(),
-            );
-        }
-
-        //self.left[0..frames].copy_from_slice(&src.left[0..frames]);
-        //self.right[0..frames].copy_from_slice(&src.right[0..frames]);
+    pub fn copy_frames_from(&mut self, src: &StereoBlockBuffer<T, MAX_BLOCKSIZE>, frames: usize) {
+        let frames = frames.min(MAX_BLOCKSIZE);
+        self.left[0..frames].copy_from_slice(&src.left[0..frames]);
+        self.right[0..frames].copy_from_slice(&src.right[0..frames]);
     }
 
     /// Return a mutable reference to the left and right channels (in that order).

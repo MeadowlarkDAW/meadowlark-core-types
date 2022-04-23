@@ -3,12 +3,12 @@
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-/// (`508,032,000`) This number was chosen because it is nicely divisible by a whole slew of factors
-/// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
+/// (`56,448,000`) This number was chosen because it is nicely divisible by a whole slew of factors
+/// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1024,
 /// and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000,
 /// 176400, and 192000`. This ensures that any recording of note or sample data in this format
 /// will always be at-least sample-accurate.
-pub static SUPER_UNITS: u32 = 508_032_000;
+pub static SUPER_UNITS: u32 = 56_448_000;
 
 /// Sampling rate in samples per second.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -1037,125 +1037,6 @@ impl DivAssign<Seconds> for Seconds {
     }
 }
 
-/// Unit of time length (of a single de-interleaved channel) in samples which represent
-/// the number of frames in a current process cycle.
-///
-/// This value will always be in the range `[0, MAX_BLOCKSIZE]` (although make sure your
-/// buffers are indeed using the same max blocksize as the process).
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
-pub struct ProcFrames<const MAX_BLOCKSIZE: usize>(usize);
-
-impl<const MAX_BLOCKSIZE: usize> ProcFrames<MAX_BLOCKSIZE> {
-    /// * frames - This will be clamped to the range `[0, MAX_BLOCKSIZE]`.
-    pub fn new(frames: usize) -> Self {
-        Self(frames.min(MAX_BLOCKSIZE))
-    }
-
-    /// Returns the number of frames as a `usize` value.
-    ///
-    /// (Please note that this internally uses a `min()` check, so avoid calling this
-    /// method inside loops.)
-    ///
-    /// This is also hints to the compiler that the number of frames is indeed less than
-    /// or equal to MAX_BLOCKSIZE, allowing the compiler to safely elid all bounds checking
-    /// on constant-sized buffers with length MAX_BLOCKSIZE (although make sure your buffers
-    /// actually do use the same MAX_BLOCKSIZE constant as the process).
-    ///
-    /// For example:
-    /// ```rust
-    /// # use rusty_daw_core::{ProcFrames, block_buffer::MonoBlockBuffer};
-    /// # let proc_frames = ProcFrames::<MAX_BLOCKSIZE>::new(100);
-    /// // A global constant in your application.
-    /// const MAX_BLOCKSIZE: usize = 128;
-    ///
-    /// // Some buffer with a constant size.
-    /// let mut buffer: MonoBlockBuffer<f32, MAX_BLOCKSIZE> = MonoBlockBuffer::new();
-    ///
-    /// // We know that `proc_frames` will always be less than or equal to MAX_BLOCKSIZE,
-    /// // but the compiler doesn't. So hint to the compiler that it is safe to elid all
-    /// // bounds checking.
-    /// let frames = proc_frames.compiler_hint_frames();
-    ///
-    /// for i in 0..frames {
-    ///     buffer[i] += 1.0;  // Bounds checking should now be elided.
-    /// }
-    /// ```
-    #[inline(always)]
-    pub fn compiler_hint_frames(&self) -> usize {
-        self.0.min(MAX_BLOCKSIZE)
-    }
-
-    /// Returns the number of frames as a `usize` value without hinting to the compiler
-    /// that the number of frames is less than or equal to MAX_BLOCKSIZE (even though
-    /// we know this to always be true).
-    ///
-    /// Note you probably want to use `compiler_hint_frames()` instead (unless you want
-    /// to "uglier" unsafe code as the way to elid bounds checking on indexing
-    /// constant-sized buffers with length MAX_BLOCKSIZE). All this really saves in
-    /// terms of performance is a single `min()` check anyway.
-    ///
-    /// If you still want to use this method, here is an example of how to use it:
-    /// ```rust
-    /// # use rusty_daw_core::{ProcFrames, block_buffer::MonoBlockBuffer};
-    /// # let proc_frames = ProcFrames::<MAX_BLOCKSIZE>::new(100);
-    /// // A global constant in your application.
-    /// const MAX_BLOCKSIZE: usize = 128;
-    ///
-    /// // Some buffer with a constant size.
-    /// let mut buffer: MonoBlockBuffer<f32, MAX_BLOCKSIZE> = MonoBlockBuffer::new();
-    ///
-    /// // We know that `proc_frames` will always be less than or equal to MAX_BLOCKSIZE,
-    /// // but the compiler doesn't.
-    /// let frames = proc_frames.unchecked_frames();
-    ///
-    /// for i in 0..frames {
-    ///     // This is safe because `proc_frames.unchecked_frames()` is always less than or
-    ///     // equal to MAX_BLOCKSIZE.
-    ///     unsafe {
-    ///         *buffer.buf.get_unchecked_mut(i) += 1.0;
-    ///     }
-    /// }
-    /// ```
-    #[inline(always)]
-    pub fn unchecked_frames(&self) -> usize {
-        self.0
-    }
-
-    /// Convert to the corresponding time length in [`SuperFrames`] from the given [`SampleRate`].
-    ///
-    /// This conversion **IS** lossless if the sample rate happens to be equal to one of the common
-    /// sample rates: `22050, 24000, 44100, 48000, 88200, 96000, 176400, or 192000`. This
-    /// conversion is *NOT* lossless otherwise.
-    ///
-    /// [`SuperFrames`]: struct.SuperFrames.html
-    /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_super_frames(&self, sample_rate: SampleRate) -> SuperFrames {
-        SuperFrames::from_frames(Frames(self.0 as u64), sample_rate)
-    }
-}
-
-impl<const MAX_BLOCKSIZE: usize> Default for ProcFrames<MAX_BLOCKSIZE> {
-    fn default() -> Self {
-        ProcFrames(0)
-    }
-}
-
-impl<const MAX_BLOCKSIZE: usize> From<u8> for ProcFrames<MAX_BLOCKSIZE> {
-    fn from(s: u8) -> Self {
-        ProcFrames(usize::from(s))
-    }
-}
-impl<const MAX_BLOCKSIZE: usize> From<u16> for ProcFrames<MAX_BLOCKSIZE> {
-    fn from(s: u16) -> Self {
-        ProcFrames(usize::from(s))
-    }
-}
-impl<const MAX_BLOCKSIZE: usize> From<usize> for ProcFrames<MAX_BLOCKSIZE> {
-    fn from(s: usize) -> Self {
-        ProcFrames(s)
-    }
-}
-
 /// Unit of time length (of a single de-interleaved channel) in samples.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
 pub struct Frames(pub u64);
@@ -1163,12 +1044,6 @@ pub struct Frames(pub u64);
 impl Frames {
     pub fn new(frames: u64) -> Self {
         Self(frames)
-    }
-
-    pub fn from_proc_frames<const MAX_BLOCKSIZE: usize>(
-        proc_frames: ProcFrames<MAX_BLOCKSIZE>,
-    ) -> Self {
-        Self(proc_frames.0 as u64)
     }
 
     /// Convert to the corresponding time in [`Seconds`] with the given [`SampleRate`].
