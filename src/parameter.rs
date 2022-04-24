@@ -183,8 +183,6 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
                 gradient,
                 unit,
                 shared_normalized,
-                normalized,
-                value: handle_value,
             },
         )
     }
@@ -246,8 +244,6 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
                 gradient,
                 unit,
                 shared_normalized,
-                normalized,
-                value: handle_value,
             },
         )
     }
@@ -398,12 +394,12 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     /// Get the shared normalized float value.
     ///
     /// This can be useful to integrate with various plugin APIs.
-    pub fn get_shared_normalized(&self) -> Arc<AtomicF32> {
+    pub fn shared_normalized(&self) -> Arc<AtomicF32> {
         Arc::clone(&self.shared_normalized)
     }
 }
 
-/// A handle to update the value of an auto-smoothed [`ParamF32`] from a UI.
+/// A handle to get and update the value of an auto-smoothed [`ParamF32`] from a UI.
 ///
 /// [`ParamF32`]: struct.ParamF32.html
 pub struct ParamF32Handle {
@@ -413,109 +409,44 @@ pub struct ParamF32Handle {
     unit: Unit,
 
     shared_normalized: Arc<AtomicF32>,
-    normalized: f32,
-
-    value: f32,
 }
 
 impl ParamF32Handle {
     /// The normalized value in the range `[0.0, 1.0]`.
-    ///
-    /// Please note that this may ***NOT*** be the latest value of the corresponding
-    /// [`ParamF32`] if the host modified it due to automation or preset loading. If you need
-    /// the latest value please use `ParamF32Handle::latest_value()` instead.
-    ///
-    /// [`ParamF32`]: struct.ParamF32.html
     pub fn normalized(&self) -> f32 {
-        self.normalized
+        self.shared_normalized.get()
     }
 
     /// The (un-normalized) value of this parameter.
     ///
-    /// Please note that this may ***NOT*** be the latest value of the corresponding
-    /// [`ParamF32`] if the host modified it due to automation or preset loading. If you need
-    /// the latest value please use `ParamF32Handle::latest_value()` instead.
-    ///
-    /// [`ParamF32`]: struct.ParamF32.html
+    /// Please note that this is calculated from the shared normalized value every time, so
+    /// avoid calling this every frame if you can.
     pub fn value(&self) -> f32 {
-        self.value
+        normalized_to_value_f32(
+            self.shared_normalized.get(),
+            self.min,
+            self.max,
+            self.gradient,
+        )
     }
 
-    /// The first item is the normalized value in the range `[0.0, 1.0]`.
-    ///
-    /// The second item is `true` if the corresponding [`ParamF32`] was just updated by the
-    /// host (usually via automation or loading a preset).
-    ///
-    /// [`ParamF32`]: struct.ParamF32.html
-    pub fn latest_normalized(&mut self) -> (f32, bool) {
-        let res = self.query_update_from_host();
-        (self.normalized, res)
-    }
-
-    /// The first item is the current (un-normalized) value of this parameter.
-    ///
-    /// The second item is `true` if the corresponding [`ParamF32`] was just updated by the
-    /// host (usually via automation or loading a preset).
-    ///
-    /// [`ParamF32`]: struct.ParamF32.html
-    pub fn latest_value(&mut self) -> (f32, bool) {
-        let res = self.query_update_from_host();
-        (self.value, res)
-    }
-
-    fn query_update_from_host(&mut self) -> bool {
-        let normalized = self.shared_normalized.get();
-        if self.normalized != normalized {
-            self.normalized = normalized;
-
-            self.value =
-                normalized_to_value_f32(self.normalized, self.min, self.max, self.gradient);
-
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Set the normalized value of this parameter in the range `[0.0, 1.0]`. This will
-    /// automatically update the value in the corresponding [`ParamF32`].
+    /// Set the normalized value of this parameter in the range `[0.0, 1.0]`.
     ///
     /// Please note that this will ***NOT*** automatically notify the host of the value change
     /// if you are using this inside a plugin spec such as VST. It is intended for you use your
     /// own method for achieving this.
-    ///
-    /// [`ParamF32`]: struct.ParamF32.html
-    pub fn set_normalized(&mut self, normalized: f32) {
-        self.query_update_from_host();
-
-        if self.normalized != normalized {
-            self.normalized = normalized.clamp(0.0, 1.0);
-
-            self.shared_normalized.set(self.normalized);
-
-            self.value =
-                normalized_to_value_f32(self.normalized, self.min, self.max, self.gradient);
-        }
+    pub fn set_normalized(&self, normalized: f32) {
+        self.shared_normalized.set(normalized.clamp(0.0, 1.0));
     }
 
-    /// Set the value of this parameter. This will automatically update the value in the
-    /// corresponding [`ParamF32`].
+    /// Set the (un-normalized) value of this parameter.
     ///
     /// Please note that this will ***NOT*** automatically notify the host of the value change
     /// if you are using this inside a plugin spec such as VST. It is intended for you use your
     /// own method for achieving this.
-    ///
-    /// [`ParamF32`]: struct.ParamF32.html
-    pub fn set_value(&mut self, value: f32) {
-        self.query_update_from_host();
-
-        if self.value != value {
-            self.normalized = value_to_normalized_f32(value, self.min, self.max, self.gradient);
-            self.value =
-                normalized_to_value_f32(self.normalized, self.min, self.max, self.gradient);
-
-            self.shared_normalized.set(self.normalized);
-        }
+    pub fn set_value(&self, value: f32) {
+        let normalized = value_to_normalized_f32(value, self.min, self.max, self.gradient);
+        self.set_normalized(normalized);
     }
 
     /// The minimum value of this parameter.
@@ -559,7 +490,7 @@ impl ParamF32Handle {
     /// Get the shared normalized float value.
     ///
     /// This can be useful to integrate with various plugin APIs.
-    pub fn get_shared_normalized(&self) -> Arc<AtomicF32> {
+    pub fn shared_normalized(&self) -> Arc<AtomicF32> {
         Arc::clone(&self.shared_normalized)
     }
 }
@@ -573,9 +504,6 @@ impl Clone for ParamF32Handle {
             unit: self.unit,
 
             shared_normalized: Arc::clone(&self.shared_normalized),
-            normalized: self.normalized,
-
-            value: self.value,
         }
     }
 }
@@ -712,8 +640,6 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
                 gradient,
                 unit,
                 shared_normalized,
-                normalized,
-                value: handle_value,
             },
         )
     }
@@ -775,8 +701,6 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
                 gradient,
                 unit,
                 shared_normalized,
-                normalized,
-                value: handle_value,
             },
         )
     }
@@ -927,12 +851,12 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     /// Get the shared normalized float value.
     ///
     /// This can be useful to integrate with various plugin APIs.
-    pub fn get_shared_normalized(&self) -> Arc<AtomicF64> {
+    pub fn shared_normalized(&self) -> Arc<AtomicF64> {
         Arc::clone(&self.shared_normalized)
     }
 }
 
-/// A handle to update the value of an auto-smoothed [`ParamF64`] from a UI.
+/// A handle to get and update the value of an auto-smoothed [`ParamF64`] from a UI.
 ///
 /// [`ParamF64`]: struct.ParamF64.html
 pub struct ParamF64Handle {
@@ -942,109 +866,44 @@ pub struct ParamF64Handle {
     unit: Unit,
 
     shared_normalized: Arc<AtomicF64>,
-    normalized: f64,
-
-    value: f64,
 }
 
 impl ParamF64Handle {
     /// The normalized value in the range `[0.0, 1.0]`.
-    ///
-    /// Please note that this may ***NOT*** be the latest value of the corresponding
-    /// [`ParamF64`] if the host modified it due to automation or preset loading. If you need
-    /// the latest value please use `ParamF64Handle::latest_value()` instead.
-    ///
-    /// [`ParamF64`]: struct.ParamF64.html
     pub fn normalized(&self) -> f64 {
-        self.normalized
+        self.shared_normalized.get()
     }
 
     /// The (un-normalized) value of this parameter.
     ///
-    /// Please note that this may ***NOT*** be the latest value of the corresponding
-    /// [`ParamF64`] if the host modified it due to automation or preset loading. If you need
-    /// the latest value please use `ParamF64Handle::latest_value()` instead.
-    ///
-    /// [`ParamF64`]: struct.ParamF64.html
+    /// Please note that this is calculated from the shared normalized value every time, so
+    /// avoid calling this every frame if you can.
     pub fn value(&self) -> f64 {
-        self.value
+        normalized_to_value_f64(
+            self.shared_normalized.get(),
+            self.min,
+            self.max,
+            self.gradient,
+        )
     }
 
-    /// The first item is the normalized value in the range `[0.0, 1.0]`.
-    ///
-    /// The second item is `true` if the corresponding [`ParamF64`] was just updated by the
-    /// host (usually via automation or loading a preset).
-    ///
-    /// [`ParamF64`]: struct.ParamF64.html
-    pub fn latest_normalized(&mut self) -> (f64, bool) {
-        let res = self.query_update_from_host();
-        (self.normalized, res)
-    }
-
-    /// The first item is the current (un-normalized) value of this parameter.
-    ///
-    /// The second item is `true` if the corresponding [`ParamF64`] was just updated by the
-    /// host (usually via automation or loading a preset).
-    ///
-    /// [`ParamF64`]: struct.ParamF64.html
-    pub fn latest_value(&mut self) -> (f64, bool) {
-        let res = self.query_update_from_host();
-        (self.value, res)
-    }
-
-    fn query_update_from_host(&mut self) -> bool {
-        let normalized = self.shared_normalized.get();
-        if self.normalized != normalized {
-            self.normalized = normalized;
-
-            self.value =
-                normalized_to_value_f64(self.normalized, self.min, self.max, self.gradient);
-
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Set the normalized value of this parameter in the range `[0.0, 1.0]`. This will
-    /// automatically update the value in the corresponding [`ParamF64`].
+    /// Set the normalized value of this parameter in the range `[0.0, 1.0]`.
     ///
     /// Please note that this will ***NOT*** automatically notify the host of the value change
     /// if you are using this inside a plugin spec such as VST. It is intended for you use your
     /// own method for achieving this.
-    ///
-    /// [`ParamF64`]: struct.ParamF64.html
-    pub fn set_normalized(&mut self, normalized: f64) {
-        self.query_update_from_host();
-
-        if self.normalized != normalized {
-            self.normalized = normalized.clamp(0.0, 1.0);
-
-            self.shared_normalized.set(self.normalized);
-
-            self.value =
-                normalized_to_value_f64(self.normalized, self.min, self.max, self.gradient);
-        }
+    pub fn set_normalized(&self, normalized: f64) {
+        self.shared_normalized.set(normalized.clamp(0.0, 1.0));
     }
 
-    /// Set the value of this parameter. This will automatically update the value in the
-    /// corresponding [`ParamF64`].
+    /// Set the (un-normalized) value of this parameter.
     ///
     /// Please note that this will ***NOT*** automatically notify the host of the value change
     /// if you are using this inside a plugin spec such as VST. It is intended for you use your
     /// own method for achieving this.
-    ///
-    /// [`ParamF64`]: struct.ParamF64.html
-    pub fn set_value(&mut self, value: f64) {
-        self.query_update_from_host();
-
-        if self.value != value {
-            self.normalized = value_to_normalized_f64(value, self.min, self.max, self.gradient);
-            self.value =
-                normalized_to_value_f64(self.normalized, self.min, self.max, self.gradient);
-
-            self.shared_normalized.set(self.normalized);
-        }
+    pub fn set_value(&self, value: f64) {
+        let normalized = value_to_normalized_f64(value, self.min, self.max, self.gradient);
+        self.set_normalized(normalized);
     }
 
     /// The minimum value of this parameter.
@@ -1088,7 +947,7 @@ impl ParamF64Handle {
     /// Get the shared normalized float value.
     ///
     /// This can be useful to integrate with various plugin APIs.
-    pub fn get_shared_normalized(&self) -> Arc<AtomicF64> {
+    pub fn shared_normalized(&self) -> Arc<AtomicF64> {
         Arc::clone(&self.shared_normalized)
     }
 }
@@ -1102,9 +961,6 @@ impl Clone for ParamF64Handle {
             unit: self.unit,
 
             shared_normalized: Arc::clone(&self.shared_normalized),
-            normalized: self.normalized,
-
-            value: self.value,
         }
     }
 }
