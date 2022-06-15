@@ -7,7 +7,7 @@
 //  Thanks wrl! :)
 
 use std::sync::{
-    atomic::{AtomicI32, Ordering},
+    atomic::{AtomicBool, AtomicI32, Ordering},
     Arc,
 };
 
@@ -123,6 +123,7 @@ pub struct ParamF32<const MAX_BLOCKSIZE: usize> {
     normalized: f32,
 
     value: f32,
+    default_value: f32,
 
     smoothed: SmoothF32<MAX_BLOCKSIZE>,
     smooth_secs: Seconds,
@@ -132,6 +133,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     /// Create a Parameter/Handle pair from its (de-normalized) value.
     ///
     /// * value - The initial (de-normalized) value of the parameter.
+    /// * default_value - The default (de-normalized) value of the parameter.
     /// * min - The minimum (de-normalized) value of the parameter.
     /// * max - The maximum (de-normalized) value of the parameter.
     /// * gradient - The [`Gradient`] mapping used when converting from the normalized value
@@ -148,6 +150,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     /// [`Unit`]: enum.Unit.html
     pub fn from_value(
         value: f32,
+        default_value: f32,
         min: f32,
         max: f32,
         gradient: Gradient,
@@ -177,6 +180,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
                 shared_normalized: Arc::clone(&shared_normalized),
                 normalized,
                 value: rt_value,
+                default_value,
                 smoothed,
                 smooth_secs,
             },
@@ -185,6 +189,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
                 max,
                 gradient,
                 unit,
+                default_value,
                 shared_normalized,
             },
         )
@@ -192,7 +197,8 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
 
     /// Create a Parameter/Handle pair from its normalized value in the range `[0.0, 1.0]`.
     ///
-    /// * value - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
+    /// * normalized - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
+    /// * default_value - The default (de-normalized) value of the parameter.
     /// * min - The minimum (de-normalized) value of the parameter.
     /// * max - The maximum (de-normalized) value of the parameter.
     /// * gradient - The [`Gradient`] mapping used when converting from the normalized value
@@ -209,6 +215,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     /// [`Unit`]: enum.Unit.html
     pub fn from_normalized(
         normalized: f32,
+        default_value: f32,
         min_value: f32,
         max_value: f32,
         gradient: Gradient,
@@ -238,6 +245,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
                 shared_normalized: Arc::clone(&shared_normalized),
                 normalized,
                 value: rt_value,
+                default_value,
                 smoothed,
                 smooth_secs,
             },
@@ -246,6 +254,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
                 max: max_value,
                 gradient,
                 unit,
+                default_value,
                 shared_normalized,
             },
         )
@@ -390,8 +399,32 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     /// otherwise this may not return the latest value.
     ///
     /// [`ParamF32Handle`]: struct.ParamF32Handle.html
-    pub fn normalized(&self) -> f32 {
+    pub fn host_get_normalized(&self) -> f32 {
         self.normalized
+    }
+
+    /// The (un-normalized) default value of the parameter.
+    pub fn default_value(&self) -> f32 {
+        self.default_value
+    }
+
+    /// The normalized default value of the parameter in the range `[0.0, 1.0]`.
+    pub fn default_normalized(&self) -> f32 {
+        self.value_to_normalized(self.default_value)
+    }
+
+    /// The current (un-normalized) value of the parameter. This is only meant for
+    /// communicating with the host. This is not meant to be used to retrieve the latest
+    /// value for DSP. To get the latest value for DSP please use `ParamF32::smoothed()`
+    /// instead.
+    ///
+    /// Please note that this should be called *after* calling `ParamF32::smoothed()`
+    /// if you need the latest value from the corresponding [`ParamF32Handle`],
+    /// otherwise this may not return the latest value.
+    ///
+    /// [`ParamF32Handle`]: struct.ParamF32Handle.html
+    pub fn host_get_value(&self) -> f32 {
+        self.value
     }
 
     /// Get the shared normalized float value.
@@ -410,6 +443,7 @@ pub struct ParamF32Handle {
     max: f32,
     gradient: Gradient,
     unit: Unit,
+    default_value: f32,
 
     shared_normalized: Arc<AtomicF32>,
 }
@@ -431,6 +465,16 @@ impl ParamF32Handle {
             self.max,
             self.gradient,
         )
+    }
+
+    /// The (un-normalized) default value of the parameter.
+    pub fn default_value(&self) -> f32 {
+        self.default_value
+    }
+
+    /// The normalized default value of the parameter in the range `[0.0, 1.0]`.
+    pub fn default_normalized(&self) -> f32 {
+        self.value_to_normalized(self.default_value)
     }
 
     /// Set the normalized value of this parameter in the range `[0.0, 1.0]`.
@@ -505,13 +549,14 @@ impl Clone for ParamF32Handle {
             max: self.max,
             gradient: self.gradient,
             unit: self.unit,
+            default_value: self.default_value,
 
             shared_normalized: Arc::clone(&self.shared_normalized),
         }
     }
 }
 
-fn normalized_to_value_f32(normalized: f32, min: f32, max: f32, gradient: Gradient) -> f32 {
+pub fn normalized_to_value_f32(normalized: f32, min: f32, max: f32, gradient: Gradient) -> f32 {
     let normalized = normalized.clamp(0.0, 1.0);
 
     let map = |x: f32| -> f32 {
@@ -540,7 +585,7 @@ fn normalized_to_value_f32(normalized: f32, min: f32, max: f32, gradient: Gradie
     }
 }
 
-fn value_to_normalized_f32(value: f32, min: f32, max: f32, gradient: Gradient) -> f32 {
+pub fn value_to_normalized_f32(value: f32, min: f32, max: f32, gradient: Gradient) -> f32 {
     if value <= min {
         return 0.0;
     }
@@ -580,6 +625,7 @@ pub struct ParamF64<const MAX_BLOCKSIZE: usize> {
     normalized: f64,
 
     value: f64,
+    default_value: f64,
 
     smoothed: SmoothF64<MAX_BLOCKSIZE>,
     smooth_secs: Seconds,
@@ -589,6 +635,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     /// Create a Parameter/Handle pair from its (de-normalized) value.
     ///
     /// * value - The initial (de-normalized) value of the parameter.
+    /// * default_value - The default (de-normalized) value of the parameter.
     /// * min - The minimum (de-normalized) value of the parameter.
     /// * max - The maximum (de-normalized) value of the parameter.
     /// * gradient - The [`Gradient`] mapping used when converting from the normalized value
@@ -605,6 +652,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     /// [`Unit`]: enum.Unit.html
     pub fn from_value(
         value: f64,
+        default_value: f64,
         min: f64,
         max: f64,
         gradient: Gradient,
@@ -634,6 +682,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
                 shared_normalized: Arc::clone(&shared_normalized),
                 normalized,
                 value: rt_value,
+                default_value,
                 smoothed,
                 smooth_secs,
             },
@@ -642,6 +691,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
                 max,
                 gradient,
                 unit,
+                default_value,
                 shared_normalized,
             },
         )
@@ -649,7 +699,8 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
 
     /// Create a Parameter/Handle pair from its normalized value in the range `[0.0, 1.0]`.
     ///
-    /// * value - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
+    /// * normalized - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
+    /// * default_value - The default (de-normalized) value of the parameter.
     /// * min - The minimum (de-normalized) value of the parameter.
     /// * max - The maximum (de-normalized) value of the parameter.
     /// * gradient - The [`Gradient`] mapping used when converting from the normalized value
@@ -666,6 +717,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     /// [`Unit`]: enum.Unit.html
     pub fn from_normalized(
         normalized: f64,
+        default_value: f64,
         min_value: f64,
         max_value: f64,
         gradient: Gradient,
@@ -695,6 +747,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
                 shared_normalized: Arc::clone(&shared_normalized),
                 normalized,
                 value: rt_value,
+                default_value,
                 smoothed,
                 smooth_secs,
             },
@@ -703,6 +756,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
                 max: max_value,
                 gradient,
                 unit,
+                default_value,
                 shared_normalized,
             },
         )
@@ -839,6 +893,30 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
 
     /// The current normalized value in the range `[0.0, 1.0]`. This is only meant for
     /// communicating with the host. This is not meant to be used to retrieve the latest
+    /// value for DSP. To get the latest value for DSP please use `ParamF32::smoothed()`
+    /// instead.
+    ///
+    /// Please note that this should be called *after* calling `ParamF32::smoothed()`
+    /// if you need the latest value from the corresponding [`ParamF32Handle`],
+    /// otherwise this may not return the latest value.
+    ///
+    /// [`ParamF32Handle`]: struct.ParamF32Handle.html
+    pub fn host_get_normalized(&self) -> f64 {
+        self.normalized
+    }
+
+    /// The (un-normalized) default value of the parameter.
+    pub fn default_value(&self) -> f64 {
+        self.default_value
+    }
+
+    /// The normalized default value of the parameter in the range `[0.0, 1.0]`.
+    pub fn default_normalized(&self) -> f64 {
+        self.value_to_normalized(self.default_value)
+    }
+
+    /// The current (un-normalized) value of the parameter. This is only meant for
+    /// communicating with the host. This is not meant to be used to retrieve the latest
     /// value for DSP. To get the latest value for DSP please use `ParamF64::smoothed()`
     /// instead.
     ///
@@ -847,8 +925,8 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     /// otherwise this may not return the latest value.
     ///
     /// [`ParamF64Handle`]: struct.ParamF64Handle.html
-    pub fn normalized(&self) -> f64 {
-        self.normalized
+    pub fn host_get_value(&self) -> f64 {
+        self.value
     }
 
     /// Get the shared normalized float value.
@@ -867,6 +945,7 @@ pub struct ParamF64Handle {
     max: f64,
     gradient: Gradient,
     unit: Unit,
+    default_value: f64,
 
     shared_normalized: Arc<AtomicF64>,
 }
@@ -888,6 +967,16 @@ impl ParamF64Handle {
             self.max,
             self.gradient,
         )
+    }
+
+    /// The (un-normalized) default value of the parameter.
+    pub fn default_value(&self) -> f64 {
+        self.default_value
+    }
+
+    /// The normalized default value of the parameter in the range `[0.0, 1.0]`.
+    pub fn default_normalized(&self) -> f64 {
+        self.value_to_normalized(self.default_value)
     }
 
     /// Set the normalized value of this parameter in the range `[0.0, 1.0]`.
@@ -962,13 +1051,14 @@ impl Clone for ParamF64Handle {
             max: self.max,
             gradient: self.gradient,
             unit: self.unit,
+            default_value: self.default_value,
 
             shared_normalized: Arc::clone(&self.shared_normalized),
         }
     }
 }
 
-fn normalized_to_value_f64(normalized: f64, min: f64, max: f64, gradient: Gradient) -> f64 {
+pub fn normalized_to_value_f64(normalized: f64, min: f64, max: f64, gradient: Gradient) -> f64 {
     let normalized = normalized.clamp(0.0, 1.0);
 
     let map = |x: f64| -> f64 {
@@ -997,7 +1087,7 @@ fn normalized_to_value_f64(normalized: f64, min: f64, max: f64, gradient: Gradie
     }
 }
 
-fn value_to_normalized_f64(value: f64, min: f64, max: f64, gradient: Gradient) -> f64 {
+pub fn value_to_normalized_f64(value: f64, min: f64, max: f64, gradient: Gradient) -> f64 {
     if value <= min {
         return 0.0;
     }
@@ -1028,6 +1118,7 @@ fn value_to_normalized_f64(value: f64, min: f64, max: f64, gradient: Gradient) -
 pub struct ParamI32 {
     min: i32,
     max: i32,
+    default_value: i32,
 
     shared: Arc<AtomicI32>,
 }
@@ -1036,9 +1127,15 @@ impl ParamI32 {
     /// Create a Parameter/Handle pair from its (de-normalized) value.
     ///
     /// * value - The initial (de-normalized) value of the parameter.
+    /// * default_value - The (de-normalized) default value of the parameter.
     /// * min - The minimum (de-normalized) value of the parameter.
     /// * max - The maximum (de-normalized) value of the parameter.
-    pub fn from_value(value: i32, min: i32, max: i32) -> (Self, ParamI32Handle) {
+    pub fn from_value(
+        value: i32,
+        default_value: i32,
+        min: i32,
+        max: i32,
+    ) -> (Self, ParamI32Handle) {
         let value = value.clamp(min, max);
 
         let shared = Arc::new(AtomicI32::new(value));
@@ -1047,19 +1144,27 @@ impl ParamI32 {
             Self {
                 min,
                 max,
+                default_value,
                 shared: Arc::clone(&shared),
             },
-            ParamI32Handle { min, max, shared },
+            ParamI32Handle {
+                min,
+                max,
+                default_value,
+                shared,
+            },
         )
     }
 
     /// Create a Parameter/Handle pair from its normalized value in the range `[0.0, 1.0]`.
     ///
-    /// * value - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
+    /// * normalized - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
+    /// * default_value - The (de-normalized) default value of the parameter.
     /// * min - The minimum (de-normalized) value of the parameter.
     /// * max - The maximum (de-normalized) value of the parameter.
     pub fn from_normalized(
         normalized: f32,
+        default_value: i32,
         min_value: i32,
         max_value: i32,
     ) -> (Self, ParamI32Handle) {
@@ -1067,7 +1172,7 @@ impl ParamI32 {
         let value = ((normalized * (max_value as f32 - min_value as f32)) + min_value as f32)
             .round() as i32;
 
-        Self::from_value(value, min_value, max_value)
+        Self::from_value(value, default_value, min_value, max_value)
     }
 
     /// Set the (de-normalized) value of this parameter.
@@ -1086,8 +1191,18 @@ impl ParamI32 {
     }
 
     /// The (un-normalized) value of this parameter.
-    pub fn value(&mut self) -> i32 {
+    pub fn value(&self) -> i32 {
         self.shared.load(Ordering::Relaxed)
+    }
+
+    /// The (un-normalized) default value of the parameter.
+    pub fn default_value(&self) -> i32 {
+        self.default_value
+    }
+
+    /// The normalized default value of the parameter in the range `[0.0, 1.0]`.
+    pub fn default_normalized(&self) -> f32 {
+        self.value_to_normalized(self.default_value)
     }
 
     /// The minimum value of this parameter.
@@ -1121,6 +1236,7 @@ impl ParamI32 {
 pub struct ParamI32Handle {
     min: i32,
     max: i32,
+    default_value: i32,
 
     shared: Arc<AtomicI32>,
 }
@@ -1129,6 +1245,16 @@ impl ParamI32Handle {
     /// The (un-normalized) value of this parameter.
     pub fn value(&self) -> i32 {
         self.shared.load(Ordering::Relaxed)
+    }
+
+    /// The (un-normalized) default value of the parameter.
+    pub fn default_value(&self) -> i32 {
+        self.default_value
+    }
+
+    /// The normalized default value of the parameter in the range `[0.0, 1.0]`.
+    pub fn default_normalized(&self) -> f32 {
+        self.value_to_normalized(self.default_value)
     }
 
     /// Set the (de-normalized) value of this parameter.
@@ -1176,7 +1302,160 @@ impl Clone for ParamI32Handle {
         Self {
             min: self.min,
             max: self.max,
+            default_value: self.default_value,
             shared: Arc::clone(&self.shared),
+        }
+    }
+}
+
+/// A parameter with an `bool` value.
+pub struct ParamBool {
+    shared: Arc<AtomicBool>,
+    default_value: bool,
+}
+
+impl ParamBool {
+    /// Create a Parameter/Handle pair from its (de-normalized) boolean value.
+    ///
+    /// * value - The initial boolean value of the parameter.
+    /// * default_value - The default boolean value of the parameter.
+    pub fn from_value(value: bool, default_value: bool) -> (Self, ParamBoolHandle) {
+        let shared = Arc::new(AtomicBool::new(value));
+
+        (
+            Self {
+                shared: Arc::clone(&shared),
+                default_value,
+            },
+            ParamBoolHandle {
+                shared,
+                default_value,
+            },
+        )
+    }
+
+    /// Create a Parameter/Handle pair from its normalized value in the range `[0.0, 1.0]`.
+    ///
+    /// * normalized - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
+    /// * default_value - The (un-normalized) default boolean value of the parameter.
+    pub fn from_normalized(normalized: f32, default_value: bool) -> (Self, ParamBoolHandle) {
+        let normalized = normalized.clamp(0.0, 1.0);
+        let value = normalized >= 0.5;
+
+        Self::from_value(value, default_value)
+    }
+
+    /// Set the (de-normalized) boolean value of this parameter.
+    pub fn set_value(&mut self, value: bool) {
+        self.shared.store(value, Ordering::Relaxed);
+    }
+
+    /// Set the normalized value of this parameter in the range `[0.0, 1.0]`.
+    pub fn set_normalized(&mut self, normalized: f32) {
+        let normalized = normalized.clamp(0.0, 1.0);
+        let value = normalized >= 0.5;
+
+        self.set_value(value);
+    }
+
+    /// The (un-normalized) boolean value of this parameter.
+    pub fn value(&self) -> bool {
+        self.shared.load(Ordering::Relaxed)
+    }
+
+    /// The (un-normalized) default boolean value of the parameter.
+    pub fn default_value(&self) -> bool {
+        self.default_value
+    }
+
+    /// The normalized default value of the parameter in the range `[0.0, 1.0]`.
+    pub fn default_normalized(&self) -> f32 {
+        self.value_to_normalized(self.default_value)
+    }
+
+    /// Convert the given value to the corresponding normalized range `[0.0, 1.0]`
+    /// of this parameter.
+    pub fn value_to_normalized(&self, value: bool) -> f32 {
+        if value {
+            1.0
+        } else {
+            0.0
+        }
+    }
+
+    /// Convert the given normalized value in the range `[0.0, 1.0]` into the
+    /// corresponding boolean value of this parameter.
+    pub fn normalized_to_value(&self, normalized: f32) -> bool {
+        let normalized = normalized.clamp(0.0, 1.0);
+        normalized >= 0.5
+    }
+}
+
+/// A handle to get and update the value of an auto-smoothed [`ParamF32`] from a UI.
+///
+/// [`ParamF32`]: struct.ParamF32.html
+pub struct ParamBoolHandle {
+    shared: Arc<AtomicBool>,
+    default_value: bool,
+}
+
+impl ParamBoolHandle {
+    /// The (un-normalized) boolean value of this parameter.
+    pub fn value(&self) -> bool {
+        self.shared.load(Ordering::Relaxed)
+    }
+
+    /// The (un-normalized) default boolean value of the parameter.
+    pub fn default_value(&self) -> bool {
+        self.default_value
+    }
+
+    /// The normalized default value of the parameter in the range `[0.0, 1.0]`.
+    pub fn default_normalized(&self) -> f32 {
+        self.value_to_normalized(self.default_value)
+    }
+
+    /// The normalized value of this parameter in the range `[0.0, `1.0]`.
+    pub fn normalized(&self) -> f32 {
+        self.value_to_normalized(self.value())
+    }
+
+    /// Set the (de-normalized) boolean value of this parameter.
+    pub fn set_value(&mut self, value: bool) {
+        self.shared.store(value, Ordering::Relaxed);
+    }
+
+    /// Set the normalized value of this parameter in the range `[0.0, 1.0]`.
+    pub fn set_normalized(&mut self, normalized: f32) {
+        let normalized = normalized.clamp(0.0, 1.0);
+        let value = normalized >= 0.5;
+
+        self.set_value(value);
+    }
+
+    /// Convert the given value to the corresponding normalized range `[0.0, 1.0]`
+    /// of this parameter.
+    pub fn value_to_normalized(&self, value: bool) -> f32 {
+        if value {
+            1.0
+        } else {
+            0.0
+        }
+    }
+
+    /// Convert the given normalized value in the range `[0.0, 1.0]` into the
+    /// corresponding boolean value of this parameter.
+    pub fn normalized_to_value(&self, normalized: f32) -> bool {
+        let normalized = normalized.clamp(0.0, 1.0);
+        normalized >= 0.5
+    }
+}
+
+impl Clone for ParamBoolHandle {
+    fn clone(&self) -> Self {
+        Self {
+            shared: Arc::clone(&self.shared),
+            default_value: self.default_value,
         }
     }
 }
