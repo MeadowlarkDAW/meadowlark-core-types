@@ -1230,9 +1230,9 @@ impl ParamI32 {
     }
 }
 
-/// A handle to get and update the value of an auto-smoothed [`ParamF32`] from a UI.
+/// A handle to get and update the value of a [`ParamI32`] from a UI.
 ///
-/// [`ParamF32`]: struct.ParamF32.html
+/// [`ParamI32`]: struct.ParamI32.html
 pub struct ParamI32Handle {
     min: i32,
     max: i32,
@@ -1391,9 +1391,9 @@ impl ParamBool {
     }
 }
 
-/// A handle to get and update the value of an auto-smoothed [`ParamF32`] from a UI.
+/// A handle to get and update the value of a [`ParamBool`] from a UI.
 ///
-/// [`ParamF32`]: struct.ParamF32.html
+/// [`ParamBool`]: struct.ParamBool.html
 pub struct ParamBoolHandle {
     shared: Arc<AtomicBool>,
     default_value: bool,
