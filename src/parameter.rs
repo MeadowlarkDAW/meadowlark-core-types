@@ -6,7 +6,10 @@
 //
 //  Thanks wrl! :)
 
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicI32, Ordering},
+    Arc,
+};
 
 use super::atomic::{AtomicF32, AtomicF64};
 use super::decibel::{
@@ -1017,6 +1020,163 @@ fn value_to_normalized_f64(value: f64, min: f64, max: f64, gradient: Gradient) -
             let minl = min.log2();
             let range = max.log2() - minl;
             (value.log2() - minl) / range
+        }
+    }
+}
+
+/// A parameter with an `i32` value.
+pub struct ParamI32 {
+    min: i32,
+    max: i32,
+
+    shared: Arc<AtomicI32>,
+}
+
+impl ParamI32 {
+    /// Create a Parameter/Handle pair from its (de-normalized) value.
+    ///
+    /// * value - The initial (de-normalized) value of the parameter.
+    /// * min - The minimum (de-normalized) value of the parameter.
+    /// * max - The maximum (de-normalized) value of the parameter.
+    pub fn from_value(value: i32, min: i32, max: i32) -> (Self, ParamI32Handle) {
+        let value = value.clamp(min, max);
+
+        let shared = Arc::new(AtomicI32::new(value));
+
+        (
+            Self {
+                min,
+                max,
+                shared: Arc::clone(&shared),
+            },
+            ParamI32Handle { min, max, shared },
+        )
+    }
+
+    /// Create a Parameter/Handle pair from its normalized value in the range `[0.0, 1.0]`.
+    ///
+    /// * value - The initial normalized value of the parameter in the range `[0.0, 1.0]`.
+    /// * min - The minimum (de-normalized) value of the parameter.
+    /// * max - The maximum (de-normalized) value of the parameter.
+    pub fn from_normalized(
+        normalized: f32,
+        min_value: i32,
+        max_value: i32,
+    ) -> (Self, ParamI32Handle) {
+        let normalized = normalized.clamp(0.0, 1.0);
+        let value = ((normalized * (max_value as f32 - min_value as f32)) + min_value as f32)
+            .round() as i32;
+
+        Self::from_value(value, min_value, max_value)
+    }
+
+    /// Set the (de-normalized) value of this parameter.
+    pub fn set_value(&mut self, value: i32) {
+        self.shared
+            .store(value.clamp(self.min, self.max), Ordering::Relaxed);
+    }
+
+    /// Set the normalized value of this parameter in the range `[0.0, 1.0]`.
+    pub fn set_normalized(&mut self, normalized: f32) {
+        let normalized = normalized.clamp(0.0, 1.0);
+        let value =
+            ((normalized * (self.max as f32 - self.min as f32)) + self.max as f32).round() as i32;
+
+        self.set_value(value);
+    }
+
+    /// The (un-normalized) value of this parameter.
+    pub fn value(&mut self) -> i32 {
+        self.shared.load(Ordering::Relaxed)
+    }
+
+    /// The minimum value of this parameter.
+    pub fn min(&self) -> i32 {
+        self.min
+    }
+
+    /// The maximum value of this parameter.
+    pub fn max(&self) -> i32 {
+        self.max
+    }
+
+    /// Convert the given value to the corresponding normalized range `[0.0, 1.0]`
+    /// of this parameter.
+    pub fn value_to_normalized(&self, value: i32) -> f32 {
+        let value = value.clamp(self.min, self.max);
+        (value - self.min) as f32 / (self.max as f32 - self.min as f32)
+    }
+
+    /// Convert the given normalized value in the range `[0.0, 1.0]` into the
+    /// corresponding value of this parameter.
+    pub fn normalized_to_value(&self, normalized: f32) -> i32 {
+        let normalized = normalized.clamp(0.0, 1.0);
+        ((normalized * (self.max as f32 - self.min as f32)) + self.max as f32).round() as i32
+    }
+}
+
+/// A handle to get and update the value of an auto-smoothed [`ParamF32`] from a UI.
+///
+/// [`ParamF32`]: struct.ParamF32.html
+pub struct ParamI32Handle {
+    min: i32,
+    max: i32,
+
+    shared: Arc<AtomicI32>,
+}
+
+impl ParamI32Handle {
+    /// The (un-normalized) value of this parameter.
+    pub fn value(&self) -> i32 {
+        self.shared.load(Ordering::Relaxed)
+    }
+
+    /// Set the (de-normalized) value of this parameter.
+    pub fn set_value(&mut self, value: i32) {
+        self.shared
+            .store(value.clamp(self.min, self.max), Ordering::Relaxed);
+    }
+
+    /// Set the normalized value of this parameter in the range `[0.0, 1.0]`.
+    pub fn set_normalized(&mut self, normalized: f32) {
+        let normalized = normalized.clamp(0.0, 1.0);
+        let value =
+            ((normalized * (self.max as f32 - self.min as f32)) + self.max as f32).round() as i32;
+
+        self.set_value(value);
+    }
+
+    /// The minimum value of this parameter.
+    pub fn min(&self) -> i32 {
+        self.min
+    }
+
+    /// The maximum value of this parameter.
+    pub fn max(&self) -> i32 {
+        self.max
+    }
+
+    /// Convert the given value to the corresponding normalized range `[0.0, 1.0]`
+    /// of this parameter.
+    pub fn value_to_normalized(&self, value: i32) -> f32 {
+        let value = value.clamp(self.min, self.max);
+        (value - self.min) as f32 / (self.max as f32 - self.min as f32)
+    }
+
+    /// Convert the given normalized value in the range `[0.0, 1.0]` into the
+    /// corresponding value of this parameter.
+    pub fn normalized_to_value(&self, normalized: f32) -> i32 {
+        let normalized = normalized.clamp(0.0, 1.0);
+        ((normalized * (self.max as f32 - self.min as f32)) + self.max as f32).round() as i32
+    }
+}
+
+impl Clone for ParamI32Handle {
+    fn clone(&self) -> Self {
+        Self {
+            min: self.min,
+            max: self.max,
+            shared: Arc::clone(&self.shared),
         }
     }
 }
