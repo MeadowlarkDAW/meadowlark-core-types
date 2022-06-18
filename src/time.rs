@@ -3,6 +3,12 @@
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
+#[cfg(feature = "serde-derive")]
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "vizia-derive")]
+use vizia::prelude::Data;
+
 /// (`56,448,000`) This number was chosen because it is nicely divisible by a whole slew of factors
 /// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1024,
 /// and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000,
@@ -11,6 +17,8 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 pub static SUPER_UNITS: u32 = 56_448_000;
 
 /// Sampling rate in samples per second.
+#[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "vizia-derive", derive(Data))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct SampleRate(pub f64);
 
@@ -104,6 +112,8 @@ impl Div<SampleRate> for f64 {
 /// Musical time in units of beats + super-beats.
 ///
 /// Note this value is always positive.
+#[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "vizia-derive", derive(Data))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct MusicalTime {
     /// The time in musical beats.
@@ -773,6 +783,8 @@ impl MulAssign<u32> for MusicalTime {
 }
 
 /// Unit of time in "Seconds"
+#[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "vizia-derive", derive(Data))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Seconds(pub f64);
 
@@ -1038,6 +1050,8 @@ impl DivAssign<Seconds> for Seconds {
 }
 
 /// Unit of time length (of a single de-interleaved channel) in samples.
+#[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "vizia-derive", derive(Data))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
 pub struct Frames(pub u64);
 
@@ -1152,6 +1166,8 @@ impl MulAssign<u64> for Frames {
 /// A "super-frame" is a unit of time that is exactly 1 / 508,032,000 of a second.
 /// This number happens to be nicely divisible by all common sampling rates, allowing
 /// changes to sample rate in a project to be a lossless process.
+#[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "vizia-derive", derive(Data))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
 pub struct SuperFrames(pub u64);
 
