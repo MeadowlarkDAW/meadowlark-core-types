@@ -1,4 +1,4 @@
-use super::{Frames, SampleRate, Seconds, SuperFrames};
+use super::{Frame, SampleRate, Seconds, SuperFrame};
 
 pub static U24_TO_F32_RATIO: f32 = 2.0 / 0x00FFFFFF as f32;
 pub static I16_TO_F32_RATIO: f32 = 1.0 / std::i16::MAX as f32;
@@ -22,7 +22,7 @@ impl AnyPCM {
     }
 
     /// The length of this resource in frames.
-    pub fn frames(&self) -> Frames {
+    pub fn frames(&self) -> Frame {
         match self {
             AnyPCM::Mono(pcm) => pcm.frames(),
             AnyPCM::Stereo(pcm) => pcm.frames(),
@@ -34,7 +34,7 @@ impl AnyPCM {
     /// This conversion **IS** lossless if the sample rate of this resource happens to be
     /// equal to one of the common sample rates: `22050, 24000, 44100, 48000, 88200,
     /// 96000, 176400, or 192000`. This conversion is *NOT* lossless otherwise.
-    pub fn super_frames(&self) -> SuperFrames {
+    pub fn super_frames(&self) -> SuperFrame {
         match self {
             AnyPCM::Mono(pcm) => pcm.super_frames(),
             AnyPCM::Stereo(pcm) => pcm.super_frames(),
@@ -57,7 +57,7 @@ pub struct MonoPCM {
     data: Vec<f32>,
     sample_rate: SampleRate,
     len_secs: Seconds,
-    len_super_frames: SuperFrames,
+    len_super_frames: SuperFrame,
 }
 
 impl MonoPCM {
@@ -66,13 +66,13 @@ impl MonoPCM {
             data: Vec::new(),
             sample_rate,
             len_secs: Seconds(0.0),
-            len_super_frames: SuperFrames::default(),
+            len_super_frames: SuperFrame::default(),
         }
     }
 
     pub fn new(data: Vec<f32>, sample_rate: SampleRate) -> Self {
-        let len_secs = Frames(data.len() as u64).to_seconds(sample_rate);
-        let len_super_frames = Frames(data.len() as u64).to_super_frames(sample_rate);
+        let len_secs = Frame(data.len() as u64).to_seconds(sample_rate);
+        let len_super_frames = Frame(data.len() as u64).to_super_frames(sample_rate);
 
         Self {
             data,
@@ -93,27 +93,27 @@ impl MonoPCM {
     pub fn set_sample_rate(&mut self, sample_rate: SampleRate) {
         if self.sample_rate != sample_rate {
             self.sample_rate = sample_rate;
-            self.len_secs = Frames(self.data.len() as u64).to_seconds(sample_rate);
+            self.len_secs = Frame(self.data.len() as u64).to_seconds(sample_rate);
             self.len_super_frames =
-                Frames(self.data.len() as u64).to_super_frames(self.sample_rate);
+                Frame(self.data.len() as u64).to_super_frames(self.sample_rate);
         }
     }
 
-    pub fn resize(&mut self, new_len: Frames, value: f32) {
+    pub fn resize(&mut self, new_len: Frame, value: f32) {
         if self.data.len() != new_len.0 as usize {
             self.data.resize(new_len.0 as usize, value);
-            self.len_secs = Frames(self.data.len() as u64).to_seconds(self.sample_rate);
+            self.len_secs = Frame(self.data.len() as u64).to_seconds(self.sample_rate);
             self.len_super_frames =
-                Frames(self.data.len() as u64).to_super_frames(self.sample_rate);
+                Frame(self.data.len() as u64).to_super_frames(self.sample_rate);
         }
     }
 
-    pub unsafe fn set_len(&mut self, new_len: Frames) {
+    pub unsafe fn set_len(&mut self, new_len: Frame) {
         if self.data.len() != new_len.0 as usize {
             self.data.set_len(new_len.0 as usize);
-            self.len_secs = Frames(self.data.len() as u64).to_seconds(self.sample_rate);
+            self.len_secs = Frame(self.data.len() as u64).to_seconds(self.sample_rate);
             self.len_super_frames =
-                Frames(self.data.len() as u64).to_super_frames(self.sample_rate);
+                Frame(self.data.len() as u64).to_super_frames(self.sample_rate);
         }
     }
 
@@ -126,7 +126,7 @@ impl MonoPCM {
     }
 
     /// The length of this resource in frames.
-    pub fn frames(&self) -> Frames {
+    pub fn frames(&self) -> Frame {
         self.data.len().into()
     }
 
@@ -135,7 +135,7 @@ impl MonoPCM {
     /// This conversion **IS** lossless if the sample rate of this resource happens to be
     /// equal to one of the common sample rates: `22050, 24000, 44100, 48000, 88200,
     /// 96000, 176400, or 192000`. This conversion is *NOT* lossless otherwise.
-    pub fn super_frames(&self) -> SuperFrames {
+    pub fn super_frames(&self) -> SuperFrame {
         self.len_super_frames
     }
 
@@ -154,7 +154,7 @@ pub struct StereoPCM {
 
     sample_rate: SampleRate,
     len_secs: Seconds,
-    len_super_frames: SuperFrames,
+    len_super_frames: SuperFrame,
 }
 
 impl StereoPCM {
@@ -164,15 +164,15 @@ impl StereoPCM {
             right: Vec::new(),
             sample_rate,
             len_secs: Seconds(0.0),
-            len_super_frames: SuperFrames::default(),
+            len_super_frames: SuperFrame::default(),
         }
     }
 
     pub fn new(left: Vec<f32>, right: Vec<f32>, sample_rate: SampleRate) -> Self {
         assert_eq!(left.len(), right.len());
 
-        let len_secs = Frames(left.len() as u64).to_seconds(sample_rate);
-        let len_super_frames = Frames(left.len() as u64).to_super_frames(sample_rate);
+        let len_secs = Frame(left.len() as u64).to_seconds(sample_rate);
+        let len_super_frames = Frame(left.len() as u64).to_super_frames(sample_rate);
 
         Self {
             left,
@@ -198,29 +198,29 @@ impl StereoPCM {
     pub fn set_sample_rate(&mut self, sample_rate: SampleRate) {
         if self.sample_rate != sample_rate {
             self.sample_rate = sample_rate;
-            self.len_secs = Frames(self.left.len() as u64).to_seconds(sample_rate);
+            self.len_secs = Frame(self.left.len() as u64).to_seconds(sample_rate);
             self.len_super_frames =
-                Frames(self.left.len() as u64).to_super_frames(self.sample_rate);
+                Frame(self.left.len() as u64).to_super_frames(self.sample_rate);
         }
     }
 
-    pub fn resize(&mut self, new_len: Frames, value: f32) {
+    pub fn resize(&mut self, new_len: Frame, value: f32) {
         if self.left.len() != new_len.0 as usize {
             self.left.resize(new_len.0 as usize, value);
             self.right.resize(new_len.0 as usize, value);
-            self.len_secs = Frames(self.left.len() as u64).to_seconds(self.sample_rate);
+            self.len_secs = Frame(self.left.len() as u64).to_seconds(self.sample_rate);
             self.len_super_frames =
-                Frames(self.left.len() as u64).to_super_frames(self.sample_rate);
+                Frame(self.left.len() as u64).to_super_frames(self.sample_rate);
         }
     }
 
-    pub unsafe fn set_len(&mut self, new_len: Frames) {
+    pub unsafe fn set_len(&mut self, new_len: Frame) {
         if self.left.len() != new_len.0 as usize {
             self.left.set_len(new_len.0 as usize);
             self.right.set_len(new_len.0 as usize);
-            self.len_secs = Frames(self.left.len() as u64).to_seconds(self.sample_rate);
+            self.len_secs = Frame(self.left.len() as u64).to_seconds(self.sample_rate);
             self.len_super_frames =
-                Frames(self.left.len() as u64).to_super_frames(self.sample_rate);
+                Frame(self.left.len() as u64).to_super_frames(self.sample_rate);
         }
     }
 
@@ -234,7 +234,7 @@ impl StereoPCM {
     }
 
     /// The length of this resource in frames.
-    pub fn frames(&self) -> Frames {
+    pub fn frames(&self) -> Frame {
         self.left.len().into()
     }
 
@@ -243,7 +243,7 @@ impl StereoPCM {
     /// This conversion **IS** lossless if the sample rate of this resource happens to be
     /// equal to one of the common sample rates: `22050, 24000, 44100, 48000, 88200,
     /// 96000, 176400, or 192000`. This conversion is *NOT* lossless otherwise.
-    pub fn super_frames(&self) -> SuperFrames {
+    pub fn super_frames(&self) -> SuperFrame {
         self.len_super_frames
     }
 

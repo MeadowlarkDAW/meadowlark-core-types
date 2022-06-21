@@ -621,85 +621,85 @@ impl MusicalTime {
         Seconds(self.as_beats_f64() * 60.0 / bpm)
     }
 
-    /// Convert to the corresponding discrete [`Frames`]. This will be rounded to the nearest sample.
+    /// Convert to the corresponding discrete [`Frame`]. This will be rounded to the nearest sample.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`Frames`]: struct.Frames.html
-    pub fn to_nearest_frame_round(&self, bpm: f64, sample_rate: SampleRate) -> Frames {
+    /// [`Frame`]: struct.Frame.html
+    pub fn to_nearest_frame_round(&self, bpm: f64, sample_rate: SampleRate) -> Frame {
         self.to_seconds(bpm).to_nearest_frame_round(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`Frames`]. This will be floored to the nearest sample.
+    /// Convert to the corresponding discrete [`Frame`]. This will be floored to the nearest sample.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`Frames`]: struct.Frames.html
-    pub fn to_nearest_frame_floor(&self, bpm: f64, sample_rate: SampleRate) -> Frames {
+    /// [`Frame`]: struct.Frame.html
+    pub fn to_nearest_frame_floor(&self, bpm: f64, sample_rate: SampleRate) -> Frame {
         self.to_seconds(bpm).to_nearest_frame_floor(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`Frames`]. This will be ceil-ed to the nearest sample.
+    /// Convert to the corresponding discrete [`Frame`]. This will be ceil-ed to the nearest sample.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`Frames`]: struct.Frames.html
-    pub fn to_nearest_frame_ceil(&self, bpm: f64, sample_rate: SampleRate) -> Frames {
+    /// [`Frame`]: struct.Frame.html
+    pub fn to_nearest_frame_ceil(&self, bpm: f64, sample_rate: SampleRate) -> Frame {
         self.to_seconds(bpm).to_nearest_frame_ceil(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`Frames`] floored to the nearest sample,
+    /// Convert to the corresponding discrete [`Frame`] floored to the nearest sample,
     /// while also returning the fractional sub-sample part.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`Frames`]: struct.Frames.html
-    pub fn to_sub_frames(&self, bpm: f64, sample_rate: SampleRate) -> (Frames, f64) {
+    /// [`Frame`]: struct.Frame.html
+    pub fn to_sub_frames(&self, bpm: f64, sample_rate: SampleRate) -> (Frame, f64) {
         self.to_seconds(bpm).to_sub_frames(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`SuperFrames`]. This will be rounded to the nearest super-frame.
+    /// Convert to the corresponding discrete [`SuperFrame`]. This will be rounded to the nearest super-frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SuperFrames`]: struct.SuperFrames.html
-    pub fn to_nearest_super_frame_round(&self, bpm: f64) -> SuperFrames {
+    /// [`SuperFrame`]: struct.SuperFrame.html
+    pub fn to_nearest_super_frame_round(&self, bpm: f64) -> SuperFrame {
         self.to_seconds(bpm).to_nearest_super_frame_round()
     }
 
-    /// Convert to the corresponding discrete [`SuperFrames`]. This will be floored to the nearest super-frame.
+    /// Convert to the corresponding discrete [`SuperFrame`]. This will be floored to the nearest super-frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SuperFrames`]: struct.SuperFrames.html
-    pub fn to_nearest_super_frame_floor(&self, bpm: f64) -> SuperFrames {
+    /// [`SuperFrame`]: struct.SuperFrame.html
+    pub fn to_nearest_super_frame_floor(&self, bpm: f64) -> SuperFrame {
         self.to_seconds(bpm).to_nearest_super_frame_floor()
     }
 
-    /// Convert to the corresponding discrete [`SuperFrames`]. This will be ceil-ed to the nearest super-frame.
+    /// Convert to the corresponding discrete [`SuperFrame`]. This will be ceil-ed to the nearest super-frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SuperFrames`]: struct.SuperFrames.html
-    pub fn to_nearest_super_frame_ceil(&self, bpm: f64) -> SuperFrames {
+    /// [`SuperFrame`]: struct.SuperFrame.html
+    pub fn to_nearest_super_frame_ceil(&self, bpm: f64) -> SuperFrame {
         self.to_seconds(bpm).to_nearest_super_frame_ceil()
     }
 
-    /// Convert to the corresponding discrete [`SuperFrames`] floored to the nearest super-frame,
+    /// Convert to the corresponding discrete [`SuperFrame`] floored to the nearest super-frame,
     /// while also returning the fractional sub-super-frame part.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SuperFrames`]: struct.SuperFrames.html
-    pub fn to_sub_super_frames(&self, bpm: f64) -> (SuperFrames, f64) {
+    /// [`SuperFrame`]: struct.SuperFrame.html
+    pub fn to_sub_super_frames(&self, bpm: f64) -> (SuperFrame, f64) {
         self.to_seconds(bpm).to_sub_super_frames()
     }
 
@@ -797,157 +797,157 @@ impl Seconds {
         self.0 as f32
     }
 
-    /// Creates a new time in `Seconds` from [`Frames`] and a [`SampleRate`].
+    /// Creates a new time in `Seconds` from [`Frame`] and a [`SampleRate`].
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`Frames`]: struct.Frames.html
+    /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn from_frames(sample_time: Frames, sample_rate: SampleRate) -> Self {
+    pub fn from_frames(sample_time: Frame, sample_rate: SampleRate) -> Self {
         sample_time.to_seconds(sample_rate)
     }
 
-    /// Creates a new time in `Seconds` from [`SuperFrames`].
+    /// Creates a new time in `Seconds` from [`SuperFrame`].
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SuperFrames`]: struct.SuperFrames.html
-    pub fn from_super_frames(super_frame_time: SuperFrames) -> Self {
+    /// [`SuperFrame`]: struct.SuperFrame.html
+    pub fn from_super_frames(super_frame_time: SuperFrame) -> Self {
         super_frame_time.to_seconds()
     }
 
-    /// Convert to discrete [`Frames`] with the given [`SampleRate`]. This will
+    /// Convert to discrete [`Frame`] with the given [`SampleRate`]. This will
     /// be rounded to the nearest sample.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then `Frames(0)` will be returned instead.
+    /// If the seconds value is negative, then `Frame(0)` will be returned instead.
     ///
-    /// [`Frames`]: struct.Frames.html
+    /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_frame_round(&self, sample_rate: SampleRate) -> Frames {
+    pub fn to_nearest_frame_round(&self, sample_rate: SampleRate) -> Frame {
         if self.0 > 0.0 {
-            Frames((self.0 * sample_rate).round() as u64)
+            Frame((self.0 * sample_rate).round() as u64)
         } else {
-            Frames(0)
+            Frame(0)
         }
     }
 
-    /// Convert to discrete [`Frames`] with the given [`SampleRate`]. This will
+    /// Convert to discrete [`Frame`] with the given [`SampleRate`]. This will
     /// be floored to the nearest sample.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then `Frames(0)` will be returned instead.
+    /// If the seconds value is negative, then `Frame(0)` will be returned instead.
     ///
-    /// [`Frames`]: struct.Frames.html
+    /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_frame_floor(&self, sample_rate: SampleRate) -> Frames {
+    pub fn to_nearest_frame_floor(&self, sample_rate: SampleRate) -> Frame {
         if self.0 > 0.0 {
-            Frames((self.0 * sample_rate).floor() as u64)
+            Frame((self.0 * sample_rate).floor() as u64)
         } else {
-            Frames(0)
+            Frame(0)
         }
     }
 
-    /// Convert to discrete [`Frames`] with the given [`SampleRate`]. This will
+    /// Convert to discrete [`Frame`] with the given [`SampleRate`]. This will
     /// be ceil-ed to the nearest sample.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then `Frames(0)` will be returned instead.
+    /// If the seconds value is negative, then `Frame(0)` will be returned instead.
     ///
-    /// [`Frames`]: struct.Frames.html
+    /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_frame_ceil(&self, sample_rate: SampleRate) -> Frames {
+    pub fn to_nearest_frame_ceil(&self, sample_rate: SampleRate) -> Frame {
         if self.0 > 0.0 {
-            Frames((self.0 * sample_rate).ceil() as u64)
+            Frame((self.0 * sample_rate).ceil() as u64)
         } else {
-            Frames(0)
+            Frame(0)
         }
     }
 
-    /// Convert to discrete [`Frames`] given the [`SampleRate`] floored to the nearest
+    /// Convert to discrete [`Frame`] given the [`SampleRate`] floored to the nearest
     /// sample, while also return the fractional sub-sample part.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then `(Frames(0), 0.0)` will be returned instead.
+    /// If the seconds value is negative, then `(Frame(0), 0.0)` will be returned instead.
     ///
-    /// [`Frames`]: struct.Frames.html
+    /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_sub_frames(&self, sample_rate: SampleRate) -> (Frames, f64) {
+    pub fn to_sub_frames(&self, sample_rate: SampleRate) -> (Frame, f64) {
         if self.0 > 0.0 {
             let frames_f64 = self.0 * sample_rate;
-            (Frames(frames_f64.floor() as u64), frames_f64.fract())
+            (Frame(frames_f64.floor() as u64), frames_f64.fract())
         } else {
-            (Frames(0), 0.0)
+            (Frame(0), 0.0)
         }
     }
 
-    /// Convert to discrete [`SuperFrames`]. This will
+    /// Convert to discrete [`SuperFrame`]. This will
     /// be rounded to the nearest super-frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then the `SuperFrames`'s value will be 0.
+    /// If the seconds value is negative, then the `SuperFrame`'s value will be 0.
     ///
-    /// [`SuperFrames`]: struct.Frames.html
-    pub fn to_nearest_super_frame_round(&self) -> SuperFrames {
+    /// [`SuperFrame`]: struct.Frame.html
+    pub fn to_nearest_super_frame_round(&self) -> SuperFrame {
         if self.0 > 0.0 {
-            SuperFrames((self.0 * f64::from(SUPER_UNITS)).round() as u64)
+            SuperFrame((self.0 * f64::from(SUPER_UNITS)).round() as u64)
         } else {
-            SuperFrames(0)
+            SuperFrame(0)
         }
     }
 
-    /// Convert to discrete [`SuperFrames`]. This will
+    /// Convert to discrete [`SuperFrame`]. This will
     /// be floored to the nearest super-frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then the `SuperFrames`'s values will be 0.
+    /// If the seconds value is negative, then the `SuperFrame`'s values will be 0.
     ///
-    /// [`SuperFrames`]: struct.Frames.html
-    pub fn to_nearest_super_frame_floor(&self) -> SuperFrames {
+    /// [`SuperFrame`]: struct.Frame.html
+    pub fn to_nearest_super_frame_floor(&self) -> SuperFrame {
         if self.0 > 0.0 {
-            SuperFrames((self.0 * f64::from(SUPER_UNITS)).floor() as u64)
+            SuperFrame((self.0 * f64::from(SUPER_UNITS)).floor() as u64)
         } else {
-            SuperFrames(0)
+            SuperFrame(0)
         }
     }
 
-    /// Convert to discrete [`SuperFrames`]. This will
+    /// Convert to discrete [`SuperFrame`]. This will
     /// be ceil-ed to the nearest super-frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then the `SuperFrames`'s values will be 0.
+    /// If the seconds value is negative, then the `SuperFrame`'s values will be 0.
     ///
-    /// [`SuperFrames`]: struct.Frames.html
-    pub fn to_nearest_super_frame_ceil(&self) -> SuperFrames {
+    /// [`SuperFrame`]: struct.Frame.html
+    pub fn to_nearest_super_frame_ceil(&self) -> SuperFrame {
         if self.0 > 0.0 {
-            SuperFrames((self.0 * f64::from(SUPER_UNITS)).ceil() as u64)
+            SuperFrame((self.0 * f64::from(SUPER_UNITS)).ceil() as u64)
         } else {
-            SuperFrames(0)
+            SuperFrame(0)
         }
     }
 
-    /// Convert to discrete [`Frames`] floored to the nearest
+    /// Convert to discrete [`Frame`] floored to the nearest
     /// super-frame, while also return the fractional sub-super-frame part.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then the `SuperFrames`'s values and the
+    /// If the seconds value is negative, then the `SuperFrame`'s values and the
     /// fractional value will both be 0.
     ///
-    /// [`SuperFrames`]: struct.Frames.html
-    pub fn to_sub_super_frames(&self) -> (SuperFrames, f64) {
+    /// [`SuperFrame`]: struct.Frame.html
+    pub fn to_sub_super_frames(&self) -> (SuperFrame, f64) {
         if self.0 > 0.0 {
             let frames_f64 = self.0 * f64::from(SUPER_UNITS);
-            (SuperFrames(frames_f64.floor() as u64), frames_f64.fract())
+            (SuperFrame(frames_f64.floor() as u64), frames_f64.fract())
         } else {
-            (SuperFrames(0), 0.0)
+            (SuperFrame(0), 0.0)
         }
     }
 
@@ -1053,9 +1053,9 @@ impl DivAssign<Seconds> for Seconds {
 #[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "vizia-derive", derive(Data))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
-pub struct Frames(pub u64);
+pub struct Frame(pub u64);
 
-impl Frames {
+impl Frame {
     pub fn new(frames: u64) -> Self {
         Self(frames)
     }
@@ -1081,81 +1081,81 @@ impl Frames {
         self.to_seconds(sample_rate).to_musical(bpm)
     }
 
-    /// Convert to the corresponding time length in [`SuperFrames`] from the given [`SampleRate`].
+    /// Convert to the corresponding time length in [`SuperFrame`] from the given [`SampleRate`].
     ///
     /// This conversion **IS** lossless if the sample rate happens to be equal to one of the common
     /// sample rates: `22050, 24000, 44100, 48000, 88200, 96000, 176400, or 192000`. This
     /// conversion is *NOT* lossless otherwise.
     ///
-    /// [`SuperFrames`]: struct.SuperFrames.html
+    /// [`SuperFrame`]: struct.SuperFrame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_super_frames(&self, sample_rate: SampleRate) -> SuperFrames {
-        SuperFrames::from_frames(*self, sample_rate)
+    pub fn to_super_frames(&self, sample_rate: SampleRate) -> SuperFrame {
+        SuperFrame::from_frames(*self, sample_rate)
     }
 }
 
-impl Default for Frames {
+impl Default for Frame {
     fn default() -> Self {
-        Frames(0)
+        Frame(0)
     }
 }
 
-impl From<u8> for Frames {
+impl From<u8> for Frame {
     fn from(s: u8) -> Self {
-        Frames(u64::from(s))
+        Frame(u64::from(s))
     }
 }
-impl From<u16> for Frames {
+impl From<u16> for Frame {
     fn from(s: u16) -> Self {
-        Frames(u64::from(s))
+        Frame(u64::from(s))
     }
 }
-impl From<u32> for Frames {
+impl From<u32> for Frame {
     fn from(s: u32) -> Self {
-        Frames(u64::from(s))
+        Frame(u64::from(s))
     }
 }
-impl From<u64> for Frames {
+impl From<u64> for Frame {
     fn from(s: u64) -> Self {
-        Frames(s)
+        Frame(s)
     }
 }
-impl From<usize> for Frames {
+impl From<usize> for Frame {
     fn from(s: usize) -> Self {
-        Frames(s as u64)
+        Frame(s as u64)
     }
 }
 
-impl Add<Frames> for Frames {
+impl Add<Frame> for Frame {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
 }
-impl Sub<Frames> for Frames {
+impl Sub<Frame> for Frame {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 - rhs.0)
     }
 }
-impl Mul<u64> for Frames {
+impl Mul<u64> for Frame {
     type Output = Self;
     fn mul(self, rhs: u64) -> Self::Output {
         Self(self.0 * rhs)
     }
 }
 
-impl AddAssign<Frames> for Frames {
+impl AddAssign<Frame> for Frame {
     fn add_assign(&mut self, other: Self) {
         self.0 += other.0;
     }
 }
-impl SubAssign<Frames> for Frames {
+impl SubAssign<Frame> for Frame {
     fn sub_assign(&mut self, other: Self) {
         self.0 -= other.0;
     }
 }
-impl MulAssign<u64> for Frames {
+impl MulAssign<u64> for Frame {
     fn mul_assign(&mut self, other: u64) {
         *self = *self * other
     }
@@ -1169,9 +1169,9 @@ impl MulAssign<u64> for Frames {
 #[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "vizia-derive", derive(Data))]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
-pub struct SuperFrames(pub u64);
+pub struct SuperFrame(pub u64);
 
-impl SuperFrames {
+impl SuperFrame {
     /// * `super_frames` - The number of super-frames
     ///
     /// A "super-frame" is a unit of time equal to 1 / 508,032,000 of a second. This number was chosen
@@ -1183,27 +1183,27 @@ impl SuperFrames {
         Self(super_frames)
     }
 
-    /// Get the time in [`SuperFrames`] from the time in [`Seconds`]
+    /// Get the time in [`SuperFrame`] from the time in [`Seconds`]
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then the `SuperFrames`'s values will be 0.
+    /// If the seconds value is negative, then the `SuperFrame`'s values will be 0.
     ///
-    /// [`SuperFrames`]: struct.SuperFrames.html
+    /// [`SuperFrame`]: struct.SuperFrame.html
     /// [`Seconds`]: struct.Seconds.html
     pub fn from_seconds(seconds: Seconds) -> Self {
         seconds.to_nearest_super_frame_round()
     }
 
-    /// Get the time in [`SuperFrames`] from the time in [`Frames`].
+    /// Get the time in [`SuperFrame`] from the time in [`Frame`].
     ///
     /// This conversion **IS** lossless if the sample rate happens to be equal to one of the common
     /// sample rates: `22050, 24000, 44100, 48000, 88200, 96000, 176400, or 192000`. This
     /// conversion is *NOT* lossless otherwise.
     ///
-    /// [`SuperFrames`]: struct.SuperFrames.html
-    /// [`Frames`]: struct.Frames.html
-    pub fn from_frames(frames: Frames, sample_rate: SampleRate) -> Self {
+    /// [`SuperFrame`]: struct.SuperFrame.html
+    /// [`Frame`]: struct.Frame.html
+    pub fn from_frames(frames: Frame, sample_rate: SampleRate) -> Self {
         match sample_rate.0 as usize {
             44100 => Self(frames.0 * (u64::from(SUPER_UNITS) / 44100)),
             48000 => Self(frames.0 * (u64::from(SUPER_UNITS) / 48000)),
@@ -1235,76 +1235,76 @@ impl SuperFrames {
         self.to_seconds().to_musical(bpm)
     }
 
-    /// Convert to the corresponding time length in [`Frames`] from the given [`SampleRate`],
+    /// Convert to the corresponding time length in [`Frame`] from the given [`SampleRate`],
     /// rounded to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`Frames`]: struct.Frames.html
+    /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_frame_round(&self, sample_rate: SampleRate) -> Frames {
+    pub fn to_nearest_frame_round(&self, sample_rate: SampleRate) -> Frame {
         self.to_seconds().to_nearest_frame_round(sample_rate)
     }
 
-    /// Convert to the corresponding time length in [`Frames`] from the given [`SampleRate`],
+    /// Convert to the corresponding time length in [`Frame`] from the given [`SampleRate`],
     /// floored to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`Frames`]: struct.Frames.html
+    /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_frame_floor(&self, sample_rate: SampleRate) -> Frames {
+    pub fn to_nearest_frame_floor(&self, sample_rate: SampleRate) -> Frame {
         self.to_seconds().to_nearest_frame_floor(sample_rate)
     }
 
-    /// Convert to the corresponding time length in [`Frames`] from the given [`SampleRate`],
+    /// Convert to the corresponding time length in [`Frame`] from the given [`SampleRate`],
     /// ceil-ed to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`Frames`]: struct.Frames.html
+    /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_frame_ceil(&self, sample_rate: SampleRate) -> Frames {
+    pub fn to_nearest_frame_ceil(&self, sample_rate: SampleRate) -> Frame {
         self.to_seconds().to_nearest_frame_ceil(sample_rate)
     }
 }
 
-impl Default for SuperFrames {
+impl Default for SuperFrame {
     fn default() -> Self {
-        SuperFrames(0)
+        SuperFrame(0)
     }
 }
 
-impl Add<SuperFrames> for SuperFrames {
+impl Add<SuperFrame> for SuperFrame {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
 }
-impl Sub<SuperFrames> for SuperFrames {
+impl Sub<SuperFrame> for SuperFrame {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 - rhs.0)
     }
 }
-impl Mul<u64> for SuperFrames {
+impl Mul<u64> for SuperFrame {
     type Output = Self;
     fn mul(self, rhs: u64) -> Self::Output {
         Self(self.0 * rhs)
     }
 }
 
-impl AddAssign<SuperFrames> for SuperFrames {
+impl AddAssign<SuperFrame> for SuperFrame {
     fn add_assign(&mut self, other: Self) {
         *self = *self + other
     }
 }
-impl SubAssign<SuperFrames> for SuperFrames {
+impl SubAssign<SuperFrame> for SuperFrame {
     fn sub_assign(&mut self, other: Self) {
         *self = *self - other
     }
 }
-impl MulAssign<u64> for SuperFrames {
+impl MulAssign<u64> for SuperFrame {
     fn mul_assign(&mut self, other: u64) {
         *self = *self * other
     }
