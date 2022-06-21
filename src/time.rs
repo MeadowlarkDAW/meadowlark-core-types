@@ -120,8 +120,8 @@ pub struct MusicalTime {
     beats: u32,
 
     /// The number of super-beats (after the time in `self.beats`). A "super-beat" is a unit of time
-    /// equal to 1 / 508,032,000 of a beat. This will auto-wrap so this will always be within the
-    /// range `[0, 508,032,000)`.
+    /// equal to 1 / 56,448,000 of a beat. This will auto-wrap so this will always be within the
+    /// range `[0, 56,448,000)`.
     ///
     /// This number was chosen because it is nicely divisible by a whole slew of factors
     /// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
@@ -134,9 +134,9 @@ pub struct MusicalTime {
 impl MusicalTime {
     /// * `beats` - The time in musical beats.
     /// * `super_beats` - The number of super-beats (after the time in `self.beats`) (Note this value
-    /// will be constrained to the range `[0, 508,032,000)`).
+    /// will be constrained to the range `[0, 56,448,000)`).
     ///
-    /// A "super-beat" is a unit of time equal to 1 / 508,032,000 of a beat. This number was chosen
+    /// A "super-beat" is a unit of time equal to 1 / 56,448,000 of a beat. This number was chosen
     /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
     /// 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, and 1920`, as well as common sampling
     /// rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`. This ensures that
@@ -155,13 +155,13 @@ impl MusicalTime {
 
     /// The number of super-beats (after the time in `self.beats()`).
     ///
-    /// A "super-beat" is a unit of time equal to 1 / 508,032,000 of a beat. This number was chosen
+    /// A "super-beat" is a unit of time equal to 1 / 56,448,000 of a beat. This number was chosen
     /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
     /// 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, and 1920`, as well as common sampling
     /// rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`. This ensures that
     /// any recording of note data in this format will always be at-least sample-accurate.
     ///
-    /// This value will always be in the range `[0, 508,032,000)`.
+    /// This value will always be in the range `[0, 56,448,000)`.
     pub fn super_beats(&self) -> u32 {
         self.super_beats
     }
@@ -662,8 +662,8 @@ impl MusicalTime {
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
     /// [`Frame`]: struct.Frame.html
-    pub fn to_sub_frames(&self, bpm: f64, sample_rate: SampleRate) -> (Frame, f64) {
-        self.to_seconds(bpm).to_sub_frames(sample_rate)
+    pub fn to_sub_frame(&self, bpm: f64, sample_rate: SampleRate) -> (Frame, f64) {
+        self.to_seconds(bpm).to_sub_frame(sample_rate)
     }
 
     /// Convert to the corresponding discrete [`SuperFrame`]. This will be rounded to the nearest super-frame.
@@ -699,8 +699,8 @@ impl MusicalTime {
     /// Note that this conversion is *NOT* lossless.
     ///
     /// [`SuperFrame`]: struct.SuperFrame.html
-    pub fn to_sub_super_frames(&self, bpm: f64) -> (SuperFrame, f64) {
-        self.to_seconds(bpm).to_sub_super_frames()
+    pub fn to_sub_super_frame(&self, bpm: f64) -> (SuperFrame, f64) {
+        self.to_seconds(bpm).to_sub_super_frame()
     }
 
     /// Try subtracting `rhs` from self. This will return `None` if the resulting value
@@ -803,8 +803,8 @@ impl Seconds {
     ///
     /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn from_frames(sample_time: Frame, sample_rate: SampleRate) -> Self {
-        sample_time.to_seconds(sample_rate)
+    pub fn from_frame(frame: Frame, sample_rate: SampleRate) -> Self {
+        frame.to_seconds(sample_rate)
     }
 
     /// Creates a new time in `Seconds` from [`SuperFrame`].
@@ -812,8 +812,8 @@ impl Seconds {
     /// Note that this conversion is *NOT* lossless.
     ///
     /// [`SuperFrame`]: struct.SuperFrame.html
-    pub fn from_super_frames(super_frame_time: SuperFrame) -> Self {
-        super_frame_time.to_seconds()
+    pub fn from_super_frame(super_frame: SuperFrame) -> Self {
+        super_frame.to_seconds()
     }
 
     /// Convert to discrete [`Frame`] with the given [`SampleRate`]. This will
@@ -876,7 +876,7 @@ impl Seconds {
     ///
     /// [`Frame`]: struct.Frame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_sub_frames(&self, sample_rate: SampleRate) -> (Frame, f64) {
+    pub fn to_sub_frame(&self, sample_rate: SampleRate) -> (Frame, f64) {
         if self.0 > 0.0 {
             let frames_f64 = self.0 * sample_rate;
             (Frame(frames_f64.floor() as u64), frames_f64.fract())
@@ -942,7 +942,7 @@ impl Seconds {
     /// fractional value will both be 0.
     ///
     /// [`SuperFrame`]: struct.Frame.html
-    pub fn to_sub_super_frames(&self) -> (SuperFrame, f64) {
+    pub fn to_sub_super_frame(&self) -> (SuperFrame, f64) {
         if self.0 > 0.0 {
             let frames_f64 = self.0 * f64::from(SUPER_UNITS);
             (SuperFrame(frames_f64.floor() as u64), frames_f64.fract())
@@ -1056,8 +1056,8 @@ impl DivAssign<Seconds> for Seconds {
 pub struct Frame(pub u64);
 
 impl Frame {
-    pub fn new(frames: u64) -> Self {
-        Self(frames)
+    pub fn new(frame: u64) -> Self {
+        Self(frame)
     }
 
     /// Convert to the corresponding time in [`Seconds`] with the given [`SampleRate`].
@@ -1089,8 +1089,8 @@ impl Frame {
     ///
     /// [`SuperFrame`]: struct.SuperFrame.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_super_frames(&self, sample_rate: SampleRate) -> SuperFrame {
-        SuperFrame::from_frames(*self, sample_rate)
+    pub fn to_super_frame(&self, sample_rate: SampleRate) -> SuperFrame {
+        SuperFrame::from_frame(*self, sample_rate)
     }
 }
 
@@ -1163,7 +1163,7 @@ impl MulAssign<u64> for Frame {
 
 /// Unit of time length (of a single de-interleaved channel) in super-frames.
 ///
-/// A "super-frame" is a unit of time that is exactly 1 / 508,032,000 of a second.
+/// A "super-frame" is a unit of time that is exactly 1 / 56,448,000 of a second.
 /// This number happens to be nicely divisible by all common sampling rates, allowing
 /// changes to sample rate in a project to be a lossless process.
 #[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
@@ -1174,13 +1174,13 @@ pub struct SuperFrame(pub u64);
 impl SuperFrame {
     /// * `super_frames` - The number of super-frames
     ///
-    /// A "super-frame" is a unit of time equal to 1 / 508,032,000 of a second. This number was chosen
+    /// A "super-frame" is a unit of time equal to 1 / 56,448,000 of a second. This number was chosen
     /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
     /// 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, and 1920`, as well as common sampling
     /// rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`. This ensures that
     /// any recording of frame data in this format will always be at-least sample-accurate.
-    pub fn new(super_frames: u64) -> Self {
-        Self(super_frames)
+    pub fn new(super_frame: u64) -> Self {
+        Self(super_frame)
     }
 
     /// Get the time in [`SuperFrame`] from the time in [`Seconds`]
@@ -1203,17 +1203,17 @@ impl SuperFrame {
     ///
     /// [`SuperFrame`]: struct.SuperFrame.html
     /// [`Frame`]: struct.Frame.html
-    pub fn from_frames(frames: Frame, sample_rate: SampleRate) -> Self {
+    pub fn from_frame(frame: Frame, sample_rate: SampleRate) -> Self {
         match sample_rate.0 as usize {
-            44100 => Self(frames.0 * (u64::from(SUPER_UNITS) / 44100)),
-            48000 => Self(frames.0 * (u64::from(SUPER_UNITS) / 48000)),
-            88200 => Self(frames.0 * (u64::from(SUPER_UNITS) / 88200)),
-            96000 => Self(frames.0 * (u64::from(SUPER_UNITS) / 96000)),
-            176400 => Self(frames.0 * (u64::from(SUPER_UNITS) / 176400)),
-            192000 => Self(frames.0 * (u64::from(SUPER_UNITS) / 192000)),
-            22050 => Self(frames.0 * (u64::from(SUPER_UNITS) / 22050)),
-            24000 => Self(frames.0 * (u64::from(SUPER_UNITS) / 24000)),
-            _ => Self((frames.0 as f64 * (f64::from(SUPER_UNITS) / sample_rate.0)).round() as u64),
+            44100 => Self(frame.0 * (u64::from(SUPER_UNITS) / 44100)),
+            48000 => Self(frame.0 * (u64::from(SUPER_UNITS) / 48000)),
+            88200 => Self(frame.0 * (u64::from(SUPER_UNITS) / 88200)),
+            96000 => Self(frame.0 * (u64::from(SUPER_UNITS) / 96000)),
+            176400 => Self(frame.0 * (u64::from(SUPER_UNITS) / 176400)),
+            192000 => Self(frame.0 * (u64::from(SUPER_UNITS) / 192000)),
+            22050 => Self(frame.0 * (u64::from(SUPER_UNITS) / 22050)),
+            24000 => Self(frame.0 * (u64::from(SUPER_UNITS) / 24000)),
+            _ => Self((frame.0 as f64 * (f64::from(SUPER_UNITS) / sample_rate.0)).round() as u64),
         }
     }
 
