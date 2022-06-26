@@ -12,32 +12,32 @@ use super::{SampleRate, Seconds, SmoothF32, SmoothStatus};
 
 const DECLICK_SETTLE: f32 = 0.001;
 
-pub struct DeclickOutput<'a, T, const MAX_BLOCKSIZE: usize> {
+pub struct DeclickOutput<'a, T> {
     pub from: &'a T,
     pub to: &'a T,
 
-    pub fade: &'a [f32; MAX_BLOCKSIZE],
+    pub fade: &'a [f32],
     pub status: SmoothStatus,
 }
 
-pub struct Declick<T: Sized + Clone, const MAX_BLOCKSIZE: usize> {
+pub struct Declick<T: Sized + Clone> {
     current: T,
     next: Option<T>,
     staged: Option<T>,
 
-    fade: SmoothF32<MAX_BLOCKSIZE>,
+    fade: SmoothF32,
 }
 
-impl<T, const MAX_BLOCKSIZE: usize> Declick<T, MAX_BLOCKSIZE>
+impl<T> Declick<T>
 where
     T: Sized + Clone + Eq,
 {
-    pub fn new(initial: T) -> Self {
+    pub fn new(initial: T, max_blocksize: usize) -> Self {
         Self {
             current: initial,
             next: None,
             staged: None,
-            fade: SmoothF32::new(0.0),
+            fade: SmoothF32::new(0.0, max_blocksize),
         }
     }
 
@@ -68,7 +68,7 @@ where
         self.fade.set_speed(sample_rate, seconds);
     }
 
-    pub fn output(&self) -> DeclickOutput<T, MAX_BLOCKSIZE> {
+    pub fn output(&self) -> DeclickOutput<T> {
         let fade = self.fade.output();
 
         DeclickOutput {
@@ -117,7 +117,7 @@ where
     }
 }
 
-impl<T, const MAX_BLOCKSIZE: usize> fmt::Debug for Declick<T, MAX_BLOCKSIZE>
+impl<T> fmt::Debug for Declick<T>
 where
     T: fmt::Debug + Sized + Clone,
 {

@@ -27,18 +27,18 @@ impl SmoothStatus {
     }
 }
 
-pub struct SmoothOutputF32<'a, const MAX_BLOCKSIZE: usize> {
-    pub values: &'a [f32; MAX_BLOCKSIZE],
+pub struct SmoothOutputF32<'a> {
+    pub values: &'a [f32],
     pub status: SmoothStatus,
 }
 
-impl<'a, const MAX_BLOCKSIZE: usize> SmoothOutputF32<'a, MAX_BLOCKSIZE> {
+impl<'a> SmoothOutputF32<'a> {
     pub fn is_smoothing(&self) -> bool {
         self.status.is_active()
     }
 }
 
-impl<'a, I, const MAX_BLOCKSIZE: usize> ops::Index<I> for SmoothOutputF32<'a, MAX_BLOCKSIZE>
+impl<'a, I> ops::Index<I> for SmoothOutputF32<'a>
 where
     I: slice::SliceIndex<[f32]>,
 {
@@ -50,8 +50,8 @@ where
     }
 }
 
-pub struct SmoothF32<const MAX_BLOCKSIZE: usize> {
-    output: [f32; MAX_BLOCKSIZE],
+pub struct SmoothF32 {
+    output: Vec<f32>,
     input: f32,
 
     status: SmoothStatus,
@@ -61,12 +61,12 @@ pub struct SmoothF32<const MAX_BLOCKSIZE: usize> {
     last_output: f32,
 }
 
-impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
-    pub fn new(input: f32) -> Self {
+impl SmoothF32 {
+    pub fn new(input: f32, max_blocksize: usize) -> Self {
         Self {
             status: SmoothStatus::Inactive,
             input,
-            output: [input; MAX_BLOCKSIZE],
+            output: vec![input; max_blocksize],
 
             a: 1.0,
             b: 0.0,
@@ -75,11 +75,14 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
     }
 
     pub fn reset(&mut self, val: f32) {
-        *self = Self {
-            a: self.a,
-            b: self.b,
-            ..Self::new(val)
-        };
+        self.status = SmoothStatus::Inactive;
+        self.input = val;
+        self.last_output = val;
+
+        let max_blocksize = self.output.len();
+
+        self.output.clear();
+        self.output.resize(max_blocksize, val);
     }
 
     pub fn set(&mut self, val: f32) {
@@ -91,7 +94,7 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
         self.input
     }
 
-    pub fn output(&self) -> SmoothOutputF32<MAX_BLOCKSIZE> {
+    pub fn output(&self) -> SmoothOutputF32 {
         SmoothOutputF32 {
             values: &self.output,
             status: self.status,
@@ -122,39 +125,26 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
     }
 
     pub fn process(&mut self, frames: usize) {
-        if self.status != SmoothStatus::Active {
+        if self.status != SmoothStatus::Active || frames == 0 {
             return;
         }
 
-        let frames = frames.min(MAX_BLOCKSIZE);
+        let frames = frames.min(self.output.len());
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
 
         for i in 1..frames {
-            // This is safe because `proc_frames.unchecked_frames()` is always less than or
-            // equal to MAX_BLOCKSIZE.
-            unsafe {
-                *self.output.get_unchecked_mut(i) =
-                    input + (*self.output.get_unchecked(i - 1) * self.b);
-            }
-
             self.output[i] = input + (self.output[i - 1] * self.b);
         }
 
-        // This is safe because `proc_frames.unchecked_frames()` is always less than or
-        // equal to MAX_BLOCKSIZE.
-        unsafe {
-            self.last_output = *self.output.get_unchecked(frames - 1);
-        }
+        self.last_output = self.output[frames - 1];
     }
 
     pub fn is_active(&self) -> bool {
         self.status.is_active()
     }
-}
 
-impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
     pub fn set_speed(&mut self, sample_rate: SampleRate, seconds: Seconds) {
         self.b = (-1.0f32 / (seconds.0 as f32 * sample_rate.0 as f32)).exp();
         self.a = 1.0f32 - self.b;
@@ -163,18 +153,17 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF32<MAX_BLOCKSIZE> {
     pub fn update_status(&mut self) -> SmoothStatus {
         self.update_status_with_epsilon(SETTLE)
     }
-}
 
-impl<const MAX_BLOCKSIZE: usize> From<f32> for SmoothF32<MAX_BLOCKSIZE> {
-    fn from(val: f32) -> Self {
-        Self::new(val)
+    pub fn max_blocksize(&self) -> usize {
+        self.output.len()
     }
 }
 
-impl<const MAX_BLOCKSIZE: usize> fmt::Debug for SmoothF32<MAX_BLOCKSIZE> {
+impl fmt::Debug for SmoothF32 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(concat!("SmoothF32"))
             .field("output[0]", &self.output[0])
+            .field("max_blocksize", &self.output.len())
             .field("input", &self.input)
             .field("status", &self.status)
             .field("last_output", &self.last_output)
@@ -184,18 +173,18 @@ impl<const MAX_BLOCKSIZE: usize> fmt::Debug for SmoothF32<MAX_BLOCKSIZE> {
 
 // ------  F64  -------------------------------------------------------------------------
 
-pub struct SmoothOutputF64<'a, const MAX_BLOCKSIZE: usize> {
-    pub values: &'a [f64; MAX_BLOCKSIZE],
+pub struct SmoothOutputF64<'a> {
+    pub values: &'a [f64],
     pub status: SmoothStatus,
 }
 
-impl<'a, const MAX_BLOCKSIZE: usize> SmoothOutputF64<'a, MAX_BLOCKSIZE> {
+impl<'a> SmoothOutputF64<'a> {
     pub fn is_smoothing(&self) -> bool {
         self.status.is_active()
     }
 }
 
-impl<'a, I, const MAX_BLOCKSIZE: usize> ops::Index<I> for SmoothOutputF64<'a, MAX_BLOCKSIZE>
+impl<'a, I> ops::Index<I> for SmoothOutputF64<'a>
 where
     I: slice::SliceIndex<[f64]>,
 {
@@ -207,8 +196,8 @@ where
     }
 }
 
-pub struct SmoothF64<const MAX_BLOCKSIZE: usize> {
-    output: [f64; MAX_BLOCKSIZE],
+pub struct SmoothF64 {
+    output: Vec<f64>,
     input: f64,
 
     status: SmoothStatus,
@@ -218,12 +207,12 @@ pub struct SmoothF64<const MAX_BLOCKSIZE: usize> {
     last_output: f64,
 }
 
-impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
-    pub fn new(input: f64) -> Self {
+impl SmoothF64 {
+    pub fn new(input: f64, max_blocksize: usize) -> Self {
         Self {
             status: SmoothStatus::Inactive,
             input,
-            output: [input; MAX_BLOCKSIZE],
+            output: vec![input; max_blocksize],
 
             a: 1.0,
             b: 0.0,
@@ -232,11 +221,14 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
     }
 
     pub fn reset(&mut self, val: f64) {
-        *self = Self {
-            a: self.a,
-            b: self.b,
-            ..Self::new(val)
-        };
+        self.status = SmoothStatus::Inactive;
+        self.input = val;
+        self.last_output = val;
+
+        let max_blocksize = self.output.len();
+
+        self.output.clear();
+        self.output.resize(max_blocksize, val);
     }
 
     pub fn set(&mut self, val: f64) {
@@ -248,7 +240,7 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
         self.input
     }
 
-    pub fn output(&self) -> SmoothOutputF64<MAX_BLOCKSIZE> {
+    pub fn output(&self) -> SmoothOutputF64 {
         SmoothOutputF64 {
             values: &self.output,
             status: self.status,
@@ -279,39 +271,26 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
     }
 
     pub fn process(&mut self, frames: usize) {
-        if self.status != SmoothStatus::Active {
+        if self.status != SmoothStatus::Active || frames == 0 {
             return;
         }
 
-        let frames = frames.min(MAX_BLOCKSIZE);
+        let frames = frames.min(self.output.len());
         let input = self.input * self.a;
 
         self.output[0] = input + (self.last_output * self.b);
 
         for i in 1..frames {
-            // This is safe because `proc_frames.unchecked_frames()` is always less than or
-            // equal to MAX_BLOCKSIZE.
-            unsafe {
-                *self.output.get_unchecked_mut(i) =
-                    input + (*self.output.get_unchecked(i - 1) * self.b);
-            }
-
             self.output[i] = input + (self.output[i - 1] * self.b);
         }
 
-        // This is safe because `proc_frames.unchecked_frames()` is always less than or
-        // equal to MAX_BLOCKSIZE.
-        unsafe {
-            self.last_output = *self.output.get_unchecked(frames - 1);
-        }
+        self.last_output = self.output[frames - 1];
     }
 
     pub fn is_active(&self) -> bool {
         self.status.is_active()
     }
-}
 
-impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
     pub fn set_speed(&mut self, sample_rate: SampleRate, seconds: Seconds) {
         self.b = (-1.0f64 / (seconds.0 as f64 * sample_rate.0 as f64)).exp();
         self.a = 1.0f64 - self.b;
@@ -320,18 +299,17 @@ impl<const MAX_BLOCKSIZE: usize> SmoothF64<MAX_BLOCKSIZE> {
     pub fn update_status(&mut self) -> SmoothStatus {
         self.update_status_with_epsilon(SETTLE as f64)
     }
-}
 
-impl<const MAX_BLOCKSIZE: usize> From<f64> for SmoothF64<MAX_BLOCKSIZE> {
-    fn from(val: f64) -> Self {
-        Self::new(val)
+    pub fn max_blocksize(&self) -> usize {
+        self.output.len()
     }
 }
 
-impl<const MAX_BLOCKSIZE: usize> fmt::Debug for SmoothF64<MAX_BLOCKSIZE> {
+impl fmt::Debug for SmoothF64 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(concat!("SmoothF64"))
             .field("output[0]", &self.output[0])
+            .field("max_blocksize", &self.output.len())
             .field("input", &self.input)
             .field("status", &self.status)
             .field("last_output", &self.last_output)

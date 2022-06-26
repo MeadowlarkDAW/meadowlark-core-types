@@ -113,7 +113,7 @@ impl Unit {
 }
 
 /// An auto-smoothed parameter with an `f32` value.
-pub struct ParamF32<const MAX_BLOCKSIZE: usize> {
+pub struct ParamF32 {
     min: f32,
     max: f32,
     gradient: Gradient,
@@ -125,11 +125,11 @@ pub struct ParamF32<const MAX_BLOCKSIZE: usize> {
     value: f32,
     default_value: f32,
 
-    smoothed: SmoothF32<MAX_BLOCKSIZE>,
+    smoothed: SmoothF32,
     smooth_secs: Seconds,
 }
 
-impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
+impl ParamF32 {
     /// Create a Parameter/Handle pair from its (de-normalized) value.
     ///
     /// * value - The initial (de-normalized) value of the parameter.
@@ -157,6 +157,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
         unit: Unit,
         smooth_secs: Seconds,
         sample_rate: SampleRate,
+        max_blocksize: usize,
     ) -> (Self, ParamF32Handle) {
         let normalized = value_to_normalized_f32(value, min, max, gradient);
 
@@ -168,7 +169,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
 
         let shared_normalized = Arc::new(AtomicF32::new(normalized));
 
-        let mut smoothed = SmoothF32::new(rt_value);
+        let mut smoothed = SmoothF32::new(rt_value, max_blocksize);
         smoothed.set_speed(sample_rate, smooth_secs);
 
         (
@@ -222,6 +223,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
         unit: Unit,
         smooth_secs: Seconds,
         sample_rate: SampleRate,
+        max_blocksize: usize,
     ) -> (Self, ParamF32Handle) {
         let normalized = normalized.clamp(0.0, 1.0);
 
@@ -233,7 +235,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
             _ => handle_value,
         };
 
-        let mut smoothed = SmoothF32::new(rt_value);
+        let mut smoothed = SmoothF32::new(rt_value, max_blocksize);
         smoothed.set_speed(sample_rate, smooth_secs);
 
         (
@@ -326,7 +328,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF32<MAX_BLOCKSIZE> {
     }
 
     /// Get the smoothed buffer of values for use in DSP.
-    pub fn smoothed(&mut self, frames: usize) -> SmoothOutputF32<MAX_BLOCKSIZE> {
+    pub fn smoothed(&mut self, frames: usize) -> SmoothOutputF32 {
         let new_normalized = self.shared_normalized.get();
         if self.normalized != new_normalized {
             self.normalized = new_normalized;
@@ -615,7 +617,7 @@ pub fn value_to_normalized_f32(value: f32, min: f32, max: f32, gradient: Gradien
 // ------  F64  -------------------------------------------------------------------------
 
 /// An auto-smoothed parameter with an `f64` value.
-pub struct ParamF64<const MAX_BLOCKSIZE: usize> {
+pub struct ParamF64 {
     min: f64,
     max: f64,
     gradient: Gradient,
@@ -627,11 +629,11 @@ pub struct ParamF64<const MAX_BLOCKSIZE: usize> {
     value: f64,
     default_value: f64,
 
-    smoothed: SmoothF64<MAX_BLOCKSIZE>,
+    smoothed: SmoothF64,
     smooth_secs: Seconds,
 }
 
-impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
+impl ParamF64 {
     /// Create a Parameter/Handle pair from its (de-normalized) value.
     ///
     /// * value - The initial (de-normalized) value of the parameter.
@@ -659,6 +661,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
         unit: Unit,
         smooth_secs: Seconds,
         sample_rate: SampleRate,
+        max_blocksize: usize,
     ) -> (Self, ParamF64Handle) {
         let normalized = value_to_normalized_f64(value, min, max, gradient);
 
@@ -670,7 +673,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
 
         let shared_normalized = Arc::new(AtomicF64::new(normalized));
 
-        let mut smoothed = SmoothF64::new(rt_value);
+        let mut smoothed = SmoothF64::new(rt_value, max_blocksize);
         smoothed.set_speed(sample_rate, smooth_secs);
 
         (
@@ -724,6 +727,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
         unit: Unit,
         smooth_secs: Seconds,
         sample_rate: SampleRate,
+        max_blocksize: usize,
     ) -> (Self, ParamF64Handle) {
         let normalized = normalized.clamp(0.0, 1.0);
 
@@ -735,7 +739,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
             _ => handle_value,
         };
 
-        let mut smoothed = SmoothF64::new(rt_value);
+        let mut smoothed = SmoothF64::new(rt_value, max_blocksize);
         smoothed.set_speed(sample_rate, smooth_secs);
 
         (
@@ -828,7 +832,7 @@ impl<const MAX_BLOCKSIZE: usize> ParamF64<MAX_BLOCKSIZE> {
     }
 
     /// Get the smoothed buffer of values for use in DSP.
-    pub fn smoothed(&mut self, frames: usize) -> SmoothOutputF64<MAX_BLOCKSIZE> {
+    pub fn smoothed(&mut self, frames: usize) -> SmoothOutputF64 {
         let new_normalized = self.shared_normalized.get();
         if self.normalized != new_normalized {
             self.normalized = new_normalized;
