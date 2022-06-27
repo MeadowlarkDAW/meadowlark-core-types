@@ -6,7 +6,6 @@ mod time;
 pub mod atomic;
 pub mod block_buffer;
 pub mod decibel;
-pub mod pcm;
 
 pub use declick::*;
 pub use parameter::*;
