@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::MusicalTime;
+use crate::time::MusicalTime;
 
 /// Simple atomic `MusicalTime` variable with relaxed ordering.
 pub struct AtomicMusicalTime {

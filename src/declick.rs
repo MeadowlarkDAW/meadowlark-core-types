@@ -8,7 +8,8 @@
 
 use std::fmt;
 
-use super::{SampleRate, Seconds, SmoothF32, SmoothStatus};
+use crate::smooth::{SmoothF32, SmoothStatus};
+use crate::time::{SampleRate, Seconds};
 
 const DECLICK_SETTLE: f32 = 0.001;
 

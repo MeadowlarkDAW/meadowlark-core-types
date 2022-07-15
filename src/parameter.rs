@@ -11,12 +11,13 @@ use std::sync::{
     Arc,
 };
 
-use super::atomic::{AtomicF32, AtomicF64};
-use super::decibel::{
+use crate::atomic::{AtomicF32, AtomicF64};
+use crate::decibel::{
     coeff_to_db_clamped_neg_90_db_f32, coeff_to_db_clamped_neg_90_db_f64,
     db_to_coeff_clamped_neg_90_db_f32, db_to_coeff_clamped_neg_90_db_f64,
 };
-use super::{SampleRate, Seconds, SmoothF32, SmoothF64, SmoothOutputF32, SmoothOutputF64};
+use crate::smooth::{SmoothF32, SmoothF64, SmoothOutputF32, SmoothOutputF64};
+use crate::time::{SampleRate, Seconds};
 
 /// A good default value to use as `smooth_secs` parameter when creating a [`ParamF32`]/[`ParamF64`].
 ///

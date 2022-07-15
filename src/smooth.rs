@@ -10,7 +10,7 @@ use std::fmt;
 use std::ops;
 use std::slice;
 
-use super::{SampleRate, Seconds};
+use crate::time::{SampleRate, Seconds};
 
 const SETTLE: f32 = 0.00001f32;
 
