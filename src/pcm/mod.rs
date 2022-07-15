@@ -2,18 +2,22 @@ use crate::time::{Frames, SampleRate};
 
 pub mod convert;
 
-pub struct PcmResource {
-    pub pcm_type: PcmResourceType,
-    pub sample_rate: SampleRate,
-    pub channels: usize,
-    pub len_frames: Frames,
+/// A resource of raw PCM samples stored in RAM. This struct stores samples
+/// in their native sample format when possible to save memory.
+///
+/// Note that PCM resources are immutable by design.
+pub struct PcmRAM {
+    pcm_type: PcmRAMType,
+    sample_rate: SampleRate,
+    channels: usize,
+    len_frames: Frames,
 }
 
-/// The format of the raw PCM samples
+/// The format of the raw PCM samples store in RAM.
 ///
 /// Note that there is no option for U32/I32. This is because we want to use
 /// float for everything anyway. We only store the other types to save memory.
-pub enum PcmResourceType {
+pub enum PcmRAMType {
     U8(Vec<Vec<u8>>),
     U16(Vec<Vec<u16>>),
     /// The endianness of the samples must be the native endianness of the
@@ -28,10 +32,113 @@ pub enum PcmResourceType {
     F64(Vec<Vec<f64>>),
 }
 
-impl PcmResource {
+impl PcmRAM {
+    pub fn new(pcm_type: PcmRAMType, sample_rate: SampleRate) -> Self {
+        let (channels, len_frames) = match &pcm_type {
+            PcmRAMType::U8(b) => {
+                let len = b[0].len();
+
+                for ch in b.iter().skip(1) {
+                    assert_eq!(ch.len(), len);
+                }
+
+                (b.len(), len)
+            }
+            PcmRAMType::U16(b) => {
+                let len = b[0].len();
+
+                for ch in b.iter().skip(1) {
+                    assert_eq!(ch.len(), len);
+                }
+
+                (b.len(), len)
+            }
+            PcmRAMType::U24(b) => {
+                let len = b[0].len();
+
+                for ch in b.iter().skip(1) {
+                    assert_eq!(ch.len(), len);
+                }
+
+                (b.len(), len)
+            }
+            PcmRAMType::S8(b) => {
+                let len = b[0].len();
+
+                for ch in b.iter().skip(1) {
+                    assert_eq!(ch.len(), len);
+                }
+
+                (b.len(), len)
+            }
+            PcmRAMType::S16(b) => {
+                let len = b[0].len();
+
+                for ch in b.iter().skip(1) {
+                    assert_eq!(ch.len(), len);
+                }
+
+                (b.len(), len)
+            }
+            PcmRAMType::S24(b) => {
+                let len = b[0].len();
+
+                for ch in b.iter().skip(1) {
+                    assert_eq!(ch.len(), len);
+                }
+
+                (b.len(), len)
+            }
+            PcmRAMType::F32(b) => {
+                let len = b[0].len();
+
+                for ch in b.iter().skip(1) {
+                    assert_eq!(ch.len(), len);
+                }
+
+                (b.len(), len)
+            }
+            PcmRAMType::F64(b) => {
+                let len = b[0].len();
+
+                for ch in b.iter().skip(1) {
+                    assert_eq!(ch.len(), len);
+                }
+
+                (b.len(), len)
+            }
+        };
+
+        Self {
+            pcm_type,
+            sample_rate,
+            channels,
+            len_frames: len_frames.into(),
+        }
+    }
+
+    /// The number of channels in this resource.
+    pub fn channels(&self) -> usize {
+        self.channels
+    }
+
+    /// The length of this resource in frames.
+    pub fn len_frames(&self) -> Frames {
+        self.len_frames
+    }
+
+    /// The sample rate of this resource.
+    pub fn sample_rate(&self) -> SampleRate {
+        self.sample_rate
+    }
+
+    pub fn get(&self) -> &PcmRAMType {
+        &self.pcm_type
+    }
+
     /// Fill the buffer with samples from the given `channel`, starting from the
     /// given `frame`. Portions that are out-of-bounds will be filled with zeros.
-    /// 
+    ///
     /// The will return an error if the given channel does not exist.
     pub fn fill_channel_f32(
         &self,
@@ -80,11 +187,11 @@ impl PcmResource {
 
                 (0, frame as usize, copy_frames)
             };
-        
+
         debug_assert!(buf_start + len <= buf_len);
 
         match &self.pcm_type {
-            PcmResourceType::U8(pcm) => {
+            PcmRAMType::U8(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[channel].len());
 
                 let buf_part = &mut buf[buf_start..buf_start + len];
@@ -94,7 +201,7 @@ impl PcmResource {
                     *b = convert::pcm_u8_to_f32(*s);
                 }
             }
-            PcmResourceType::U16(pcm) => {
+            PcmRAMType::U16(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[channel].len());
 
                 let buf_part = &mut buf[buf_start..buf_start + len];
@@ -104,7 +211,7 @@ impl PcmResource {
                     *b = convert::pcm_u16_to_f32(*p);
                 }
             }
-            PcmResourceType::U24(pcm) => {
+            PcmRAMType::U24(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[channel].len());
 
                 let buf_part = &mut buf[buf_start..buf_start + len];
@@ -114,7 +221,7 @@ impl PcmResource {
                     *b = convert::pcm_u24_to_f32_ne(*p);
                 }
             }
-            PcmResourceType::S8(pcm) => {
+            PcmRAMType::S8(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[channel].len());
 
                 let buf_part = &mut buf[buf_start..buf_start + len];
@@ -124,7 +231,7 @@ impl PcmResource {
                     *b = convert::pcm_s8_to_f32(*p);
                 }
             }
-            PcmResourceType::S16(pcm) => {
+            PcmRAMType::S16(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[channel].len());
 
                 let buf_part = &mut buf[buf_start..buf_start + len];
@@ -134,7 +241,7 @@ impl PcmResource {
                     *b = convert::pcm_s16_to_f32(*p);
                 }
             }
-            PcmResourceType::S24(pcm) => {
+            PcmRAMType::S24(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[channel].len());
 
                 let buf_part = &mut buf[buf_start..buf_start + len];
@@ -144,7 +251,7 @@ impl PcmResource {
                     *b = convert::pcm_s24_to_f32_ne(*p);
                 }
             }
-            PcmResourceType::F32(pcm) => {
+            PcmRAMType::F32(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[channel].len());
 
                 let buf_part = &mut buf[buf_start..buf_start + len];
@@ -152,7 +259,7 @@ impl PcmResource {
 
                 buf_part.copy_from_slice(pcm_part);
             }
-            PcmResourceType::F64(pcm) => {
+            PcmRAMType::F64(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[channel].len());
 
                 let buf_part = &mut buf[buf_start..buf_start + len];
@@ -169,7 +276,7 @@ impl PcmResource {
 
     /// Fill the stereo buffer with samples, starting from the given `frame`.
     /// Portions that are out-of-bounds will be filled with zeros.
-    /// 
+    ///
     /// If this resource has only one channel, then both channels will be
     /// filled with the same data.
     pub fn fill_stereo_f32(&self, frame: isize, buf_l: &mut [f32], buf_r: &mut [f32]) {
@@ -221,11 +328,11 @@ impl PcmResource {
 
                 (0, frame as usize, copy_frames)
             };
-        
+
         debug_assert!(buf_start + len <= buf_len);
 
         match &self.pcm_type {
-            PcmResourceType::U8(pcm) => {
+            PcmRAMType::U8(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[0].len());
                 debug_assert!(pcm_start + len <= pcm[1].len());
 
@@ -239,7 +346,7 @@ impl PcmResource {
                     buf_r_part[i] = convert::pcm_u8_to_f32(pcm_r_part[i]);
                 }
             }
-            PcmResourceType::U16(pcm) => {
+            PcmRAMType::U16(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[0].len());
                 debug_assert!(pcm_start + len <= pcm[1].len());
 
@@ -253,7 +360,7 @@ impl PcmResource {
                     buf_r_part[i] = convert::pcm_u16_to_f32(pcm_r_part[i]);
                 }
             }
-            PcmResourceType::U24(pcm) => {
+            PcmRAMType::U24(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[0].len());
                 debug_assert!(pcm_start + len <= pcm[1].len());
 
@@ -267,7 +374,7 @@ impl PcmResource {
                     buf_r_part[i] = convert::pcm_u24_to_f32_ne(pcm_r_part[i]);
                 }
             }
-            PcmResourceType::S8(pcm) => {
+            PcmRAMType::S8(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[0].len());
                 debug_assert!(pcm_start + len <= pcm[1].len());
 
@@ -281,7 +388,7 @@ impl PcmResource {
                     buf_r_part[i] = convert::pcm_s8_to_f32(pcm_r_part[i]);
                 }
             }
-            PcmResourceType::S16(pcm) => {
+            PcmRAMType::S16(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[0].len());
                 debug_assert!(pcm_start + len <= pcm[1].len());
 
@@ -295,7 +402,7 @@ impl PcmResource {
                     buf_r_part[i] = convert::pcm_s16_to_f32(pcm_r_part[i]);
                 }
             }
-            PcmResourceType::S24(pcm) => {
+            PcmRAMType::S24(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[0].len());
                 debug_assert!(pcm_start + len <= pcm[1].len());
 
@@ -309,7 +416,7 @@ impl PcmResource {
                     buf_r_part[i] = convert::pcm_s24_to_f32_ne(pcm_r_part[i]);
                 }
             }
-            PcmResourceType::F32(pcm) => {
+            PcmRAMType::F32(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[0].len());
                 debug_assert!(pcm_start + len <= pcm[1].len());
 
@@ -321,7 +428,7 @@ impl PcmResource {
                 buf_l_part.copy_from_slice(pcm_l_part);
                 buf_r_part.copy_from_slice(pcm_r_part);
             }
-            PcmResourceType::F64(pcm) => {
+            PcmRAMType::F64(pcm) => {
                 debug_assert!(pcm_start + len <= pcm[0].len());
                 debug_assert!(pcm_start + len <= pcm[1].len());
 
@@ -336,5 +443,10 @@ impl PcmResource {
                 }
             }
         }
+    }
+
+    /// Consume this resource and return the raw samples.
+    pub fn to_raw(self) -> PcmRAMType {
+        self.pcm_type
     }
 }
