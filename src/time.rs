@@ -6,12 +6,12 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 #[cfg(feature = "serde-derive")]
 use serde::{Deserialize, Serialize};
 
-/// (`56,448,000`) This number was chosen because it is nicely divisible by a whole slew of factors
-/// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1024,
-/// and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000,
-/// 176400, and 192000`. This ensures that any recording of note or sample data in this format
+/// (`1,241,856,000`) This number was chosen because it is nicely divisible by a whole slew of factors
+/// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1024,
+/// 2048, and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000, 88200,
+/// 96000, 176400, and 192000`. This ensures that any recording of note or sample data in this format
 /// will always be at-least sample-accurate.
-pub static SUPER_UNITS: u32 = 56_448_000;
+pub static SUPER_UNITS: u64 = 1_241_856_000;
 
 /// Sampling rate in samples per second.
 #[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
@@ -105,266 +105,307 @@ impl Div<SampleRate> for f64 {
     }
 }
 
-/// Musical time in units of beats + super-beats.
+/// Musical time in units of super-beats.
 ///
-/// Note this value is always positive.
+/// A "super-beat" is a unit of time equal to 1 / 1,241,856,000 of a beat. This number was chosen
+/// because it is nicely divisible by a whole slew of factors
+/// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
+/// 1024, 2048, and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000,
+/// 88200, 96000, 176400, and 192000`. This ensures that any recording of note or sample data in
+/// this format will always be at-least sample-accurate.
 #[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MusicalTime {
-    /// The time in musical beats.
-    beats: u32,
-
-    /// The number of super-beats (after the time in `self.beats`). A "super-beat" is a unit of time
-    /// equal to 1 / 56,448,000 of a beat. This will auto-wrap so this will always be within the
-    /// range `[0, 56,448,000)`.
-    ///
-    /// This number was chosen because it is nicely divisible by a whole slew of factors
-    /// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
-    /// and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000,
-    /// 176400, and 192000`. This ensures that any recording of note data in this format will always be
-    /// at-least sample-accurate.
-    super_beats: u32,
-}
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct MusicalTime(pub u64);
 
 impl MusicalTime {
     /// * `beats` - The time in musical beats.
     /// * `super_beats` - The number of super-beats (after the time in `self.beats`) (Note this value
-    /// will be constrained to the range `[0, 56,448,000)`).
+    /// will be constrained to the range `[0, 1,241,856,000)`).
     ///
-    /// A "super-beat" is a unit of time equal to 1 / 56,448,000 of a beat. This number was chosen
-    /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
-    /// 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, and 1920`, as well as common sampling
-    /// rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`. This ensures that
-    /// any recording of note data in this format will always be at-least sample-accurate.
+    /// A "super-beat" is a unit of time equal to 1 / 1,241,856,000 of a beat. This number was chosen
+    /// because it is nicely divisible by a whole slew of factors
+    /// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
+    /// 1024, 2048, and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000,
+    /// 88200, 96000, 176400, and 192000`. This ensures that any recording of note or sample data in
+    /// this format will always be at-least sample-accurate.
     pub fn new(beats: u32, super_beats: u32) -> Self {
-        Self {
-            beats,
-            super_beats: super_beats.min(SUPER_UNITS - 1),
-        }
+        Self((u64::from(beats) * SUPER_UNITS) + (u64::from(super_beats).min(SUPER_UNITS - 1)))
     }
 
-    /// The time in musical beats.
+    /// The time in musical beats (floored to the nearest beat).
     pub fn beats(&self) -> u32 {
-        self.beats
+        (self.0 / SUPER_UNITS) as u32
     }
 
     /// The number of super-beats (after the time in `self.beats()`).
     ///
-    /// A "super-beat" is a unit of time equal to 1 / 56,448,000 of a beat. This number was chosen
+    /// A "super-beat" is a unit of time equal to 1 / 1,241,856,000 of a beat. This number was chosen
     /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
-    /// 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, and 1920`, as well as common sampling
-    /// rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`. This ensures that
-    /// any recording of note data in this format will always be at-least sample-accurate.
+    /// 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1024, 2048, and 1920`, as well as
+    /// common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`.
+    /// This ensures that any recording of note data in this format will always be at-least
+    /// sample-accurate.
     ///
-    /// This value will always be in the range `[0, 56,448,000)`.
+    /// This value will always be in the range `[0, 1,241,856,000)`.
     pub fn super_beats(&self) -> u32 {
-        self.super_beats
+        (self.0 % SUPER_UNITS) as u32
     }
 
     /// * `beats` - The time in musical beats.
     pub fn from_beats(beats: u32) -> Self {
-        Self {
-            beats,
-            super_beats: 0,
-        }
+        Self(u64::from(beats) * SUPER_UNITS)
     }
 
     /// * `beats` - The time in musical beats.
     /// * `half_beats` - The number of half-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 1]`.
     pub fn from_half_beats(beats: u32, half_beats: u32) -> Self {
-        static N: u32 = 2;
+        static N: u64 = 2;
 
-        Self {
-            beats,
-            super_beats: half_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(half_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `quarter_beats` - The number of quarter-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 3]`.
     pub fn from_quarter_beats(beats: u32, quarter_beats: u32) -> Self {
-        static N: u32 = 4;
+        static N: u64 = 4;
 
-        Self {
-            beats,
-            super_beats: quarter_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(quarter_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `eighth_beats` - The number of eighth-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 7]`.
     pub fn from_eighth_beats(beats: u32, eighth_beats: u32) -> Self {
-        static N: u32 = 8;
+        static N: u64 = 8;
 
-        Self {
-            beats,
-            super_beats: eighth_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(eighth_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `sixteenth_beats` - The number of sixteenth-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 15]`.
     pub fn from_sixteenth_beats(beats: u32, sixteenth_beats: u32) -> Self {
-        static N: u32 = 16;
+        static N: u64 = 16;
 
-        Self {
-            beats,
-            super_beats: sixteenth_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(sixteenth_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `_32nd_beats` - The number of 32nd-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 31]`.
     pub fn from_32nd_beats(beats: u32, _32nd_beats: u32) -> Self {
-        static N: u32 = 32;
+        static N: u64 = 32;
 
-        Self {
-            beats,
-            super_beats: _32nd_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(_32nd_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `_64th_beats` - The number of 64th-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 63]`.
     pub fn from_64th_beats(beats: u32, _64th_beats: u32) -> Self {
-        static N: u32 = 64;
+        static N: u64 = 64;
 
-        Self {
-            beats,
-            super_beats: _64th_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(_64th_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `_128th_beats` - The number of 128th-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 127]`.
     pub fn from_128th_beats(beats: u32, _128th_beats: u32) -> Self {
-        static N: u32 = 128;
+        static N: u64 = 128;
 
-        Self {
-            beats,
-            super_beats: _128th_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(_128th_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
+    }
+
+    /// * `beats` - The time in musical beats.
+    /// * `_256th_beats` - The number of 256th-beats (after the time `beats`). This will be
+    /// constrained to the range `[0, 255]`.
+    pub fn from_256th_beats(beats: u32, _256th_beats: u32) -> Self {
+        static N: u64 = 256;
+
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(_256th_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
+    }
+
+    /// * `beats` - The time in musical beats.
+    /// * `_512th_beats` - The number of 512th-beats (after the time `beats`). This will be
+    /// constrained to the range `[0, 511]`.
+    pub fn from_512th_beats(beats: u32, _512th_beats: u32) -> Self {
+        static N: u64 = 512;
+
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(_512th_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
+    }
+
+    /// * `beats` - The time in musical beats.
+    /// * `_1024th_beats` - The number of 1024th-beats (after the time `beats`). This will be
+    /// constrained to the range `[0, 1023]`.
+    pub fn from_1024th_beats(beats: u32, _1024th_beats: u32) -> Self {
+        static N: u64 = 1024;
+
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(_1024th_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
+    }
+
+    /// * `beats` - The time in musical beats.
+    /// * `_2048th_beats` - The number of 2048th-beats (after the time `beats`). This will be
+    /// constrained to the range `[0, 2047]`.
+    pub fn from_2048th_beats(beats: u32, _2048th_beats: u32) -> Self {
+        static N: u64 = 2048;
+
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(_2048th_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `third_beats` - The number of third-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 2]`.
     pub fn from_third_beats(beats: u32, third_beats: u32) -> Self {
-        static N: u32 = 3;
+        static N: u64 = 3;
 
-        Self {
-            beats,
-            super_beats: third_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(third_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `fifth_beats` - The number of fifth-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 4]`.
     pub fn from_fifth_beats(beats: u32, fifth_beats: u32) -> Self {
-        static N: u32 = 5;
+        static N: u64 = 5;
 
-        Self {
-            beats,
-            super_beats: fifth_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(fifth_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `sixth_beats` - The number of sixth-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 5]`.
-    pub fn from_sixth_beats(beats: u32, fifth_beats: u32) -> Self {
-        static N: u32 = 6;
+    pub fn from_sixth_beats(beats: u32, sixth_beats: u32) -> Self {
+        static N: u64 = 6;
 
-        Self {
-            beats,
-            super_beats: fifth_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(sixth_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `seventh_beats` - The number of seventh-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 6]`.
-    pub fn from_seventh_beats(beats: u32, seventh_beats: u32) -> Self {
-        static N: u32 = 7;
+    pub fn from_seventh_beats(beats: u64, seventh_beats: u32) -> Self {
+        static N: u64 = 7;
 
-        Self {
-            beats,
-            super_beats: seventh_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(seventh_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `ninth_beats` - The number of ninth-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 8]`.
     pub fn from_ninth_beats(beats: u32, ninth_beats: u32) -> Self {
-        static N: u32 = 9;
+        static N: u64 = 9;
 
-        Self {
-            beats,
-            super_beats: ninth_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(ninth_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `tenth_beats` - The number of tenth-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 9]`.
     pub fn from_tenth_beats(beats: u32, tenth_beats: u32) -> Self {
-        static N: u32 = 10;
+        static N: u64 = 10;
 
-        Self {
-            beats,
-            super_beats: tenth_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(tenth_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
+    }
+
+    /// * `beats` - The time in musical beats.
+    /// * `eleventh_beats` - The number of eleventh-beats (after the time `beats`). This will be
+    /// constrained to the range `[0, 10]`.
+    pub fn from_eleventh_beats(beats: u32, eleventh_beats: u32) -> Self {
+        static N: u64 = 11;
+
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(eleventh_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `twelth_beats` - The number of twelth-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 11]`.
     pub fn from_twelth_beats(beats: u32, twelth_beats: u32) -> Self {
-        static N: u32 = 12;
+        static N: u64 = 12;
 
-        Self {
-            beats,
-            super_beats: twelth_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(twelth_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// * `beats` - The time in musical beats.
     /// * `_24th_beats` - The number of 24th-beats (after the time `beats`). This will be
     /// constrained to the range `[0, 23]`.
     pub fn from_24th_beats(beats: u32, _24th_beats: u32) -> Self {
-        static N: u32 = 24;
+        static N: u64 = 24;
 
-        Self {
-            beats,
-            super_beats: _24th_beats.min(N - 1) * (SUPER_UNITS / N),
-        }
+        Self(
+            (u64::from(beats) * SUPER_UNITS)
+                + (u64::from(_24th_beats).min(N - 1) * (SUPER_UNITS / N)),
+        )
     }
 
     /// Get the corresponding musical time from the number of beats (as an `f64`).
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If `beats` is negative, then a MusicalTime of 0 will be returned instead.
+    /// If `beats` is less than 0, then a musical time of `0` will be returned instead.
     pub fn from_beats_f64(beats: f64) -> Self {
-        if beats > 0.0 {
-            Self {
-                beats: beats.floor() as u32,
-                super_beats: (beats.fract() * f64::from(SUPER_UNITS)).round() as u32,
-            }
+        if beats >= 0.0 {
+            Self((beats * (SUPER_UNITS as f64)).round() as u64)
         } else {
-            Self {
-                beats: 0,
-                super_beats: 0,
-            }
+            Self(0)
         }
     }
 
@@ -374,49 +415,57 @@ impl MusicalTime {
     ///
     /// This is useful for displaying notes in UI.
     pub fn as_beats_f64(&self) -> f64 {
-        f64::from(self.beats) + (f64::from(self.super_beats) / f64::from(SUPER_UNITS))
+        self.0 as f64 / (SUPER_UNITS as f64)
     }
 
     pub fn snap_to_nearest_beat(&self) -> MusicalTime {
-        let beats = if self.super_beats < (SUPER_UNITS / 2) {
-            self.beats
-        } else {
-            self.beats + 1
-        };
+        let mut beats = self.0 / SUPER_UNITS;
+        let super_beats = self.0 % SUPER_UNITS;
 
-        MusicalTime {
-            beats,
-            super_beats: 0,
+        if super_beats >= (SUPER_UNITS / 2) {
+            beats += 1;
         }
+
+        MusicalTime(beats * SUPER_UNITS)
     }
 
     /// Snap to the nearest multiple of whole beats.
-    pub fn snap_to_nearest_whole_beats(&self, beats: u32) -> MusicalTime {
-        let nearest_beat = self.snap_to_nearest_beat();
-        let mut new_beats = (nearest_beat.beats % beats) * beats;
-        if nearest_beat.beats - new_beats >= beats / 2 {
-            new_beats += beats / 2;
+    pub fn snap_to_nearest_whole_beats(&self, whole_beats: u32) -> MusicalTime {
+        let mut nearest_beat = self.0 / SUPER_UNITS;
+        let super_beats = self.0 % SUPER_UNITS;
+
+        if super_beats >= (SUPER_UNITS / 2) {
+            nearest_beat += 1;
         }
 
-        MusicalTime {
-            beats: new_beats,
-            super_beats: 0,
-        }
+        let nearest_floored_whole_beat =
+            (nearest_beat / u64::from(whole_beats)) * u64::from(whole_beats);
+
+        let nearest_whole_beat =
+            if nearest_beat - nearest_floored_whole_beat >= u64::from(whole_beats) / 2 {
+                nearest_floored_whole_beat + 1
+            } else {
+                nearest_floored_whole_beat
+            };
+
+        MusicalTime(nearest_whole_beat * SUPER_UNITS)
     }
 
-    pub fn snap_to_nearest_fractional_beat<const DIVISOR: u32>(&self) -> MusicalTime {
-        let mut beats = self.beats;
-        let mut super_beats =
-            (self.super_beats % (SUPER_UNITS / DIVISOR)) * (SUPER_UNITS / DIVISOR);
-        if self.super_beats - super_beats >= (SUPER_UNITS / DIVISOR) / 2 {
-            super_beats += SUPER_UNITS / DIVISOR;
-        }
-        if super_beats >= SUPER_UNITS {
-            beats += 1;
-            super_beats = 0;
-        }
+    pub fn snap_to_nearest_fractional_beat<const DIVISOR: u64>(&self) -> MusicalTime {
+        let beats = self.0 / SUPER_UNITS;
+        let super_beats = self.0 % SUPER_UNITS;
 
-        MusicalTime { beats, super_beats }
+        let nearest_floored_super_beat =
+            (super_beats / (SUPER_UNITS / DIVISOR)) * (SUPER_UNITS / DIVISOR);
+
+        let nearest_super_beat =
+            if super_beats - nearest_floored_super_beat >= (SUPER_UNITS / DIVISOR) / 2 {
+                nearest_floored_super_beat + (SUPER_UNITS / DIVISOR)
+            } else {
+                nearest_floored_super_beat
+            };
+
+        MusicalTime((beats * SUPER_UNITS) + nearest_super_beat)
     }
 
     pub fn snap_to_nearest_half_beat(&self) -> MusicalTime {
@@ -447,6 +496,22 @@ impl MusicalTime {
         self.snap_to_nearest_fractional_beat::<128>()
     }
 
+    pub fn snap_to_nearest_256th_beat(&self) -> MusicalTime {
+        self.snap_to_nearest_fractional_beat::<256>()
+    }
+
+    pub fn snap_to_nearest_512th_beat(&self) -> MusicalTime {
+        self.snap_to_nearest_fractional_beat::<512>()
+    }
+
+    pub fn snap_to_nearest_1024th_beat(&self) -> MusicalTime {
+        self.snap_to_nearest_fractional_beat::<1024>()
+    }
+
+    pub fn snap_to_nearest_2048th_beat(&self) -> MusicalTime {
+        self.snap_to_nearest_fractional_beat::<2048>()
+    }
+
     pub fn snap_to_nearest_third_beat(&self) -> MusicalTime {
         self.snap_to_nearest_fractional_beat::<3>()
     }
@@ -471,7 +536,11 @@ impl MusicalTime {
         self.snap_to_nearest_fractional_beat::<10>()
     }
 
-    pub fn snap_to_nearest_twelth_beat(&self) -> MusicalTime {
+    pub fn snap_to_nearest_eleventh_beat(&self) -> MusicalTime {
+        self.snap_to_nearest_fractional_beat::<11>()
+    }
+
+    pub fn snap_to_nearest_twelfth_beat(&self) -> MusicalTime {
         self.snap_to_nearest_fractional_beat::<12>()
     }
 
@@ -483,8 +552,10 @@ impl MusicalTime {
     /// the nearest fractional-beat).
     ///
     /// This will always be in the range `[0, DIVISOR - 1]`.
-    pub fn num_fractional_beats<const DIVISOR: u32>(&self) -> u32 {
-        self.super_beats % (SUPER_UNITS / DIVISOR)
+    pub fn num_fractional_beats<const DIVISOR: u64>(&self) -> u32 {
+        let super_beats = self.0 % SUPER_UNITS;
+
+        (super_beats % (SUPER_UNITS / DIVISOR)) as u32
     }
 
     /// The number of half-beats *after* `self.beats()` (floored to
@@ -527,7 +598,7 @@ impl MusicalTime {
         self.num_fractional_beats::<32>()
     }
 
-    /// The number of 128th-beats *after* `self.beats()` (floored to
+    /// The number of 64th-beats *after* `self.beats()` (floored to
     /// the nearest 64th-beat).
     ///
     /// This will always be in the range `[0, 63]`.
@@ -535,12 +606,44 @@ impl MusicalTime {
         self.num_fractional_beats::<64>()
     }
 
-    /// The number of 64th-beats *after* `self.beats()` (floored to
+    /// The number of 128th-beats *after* `self.beats()` (floored to
     /// the nearest 128th-beat).
     ///
     /// This will always be in the range `[0, 127]`.
     pub fn num_128th_beats(&self) -> u32 {
         self.num_fractional_beats::<128>()
+    }
+
+    /// The number of 256th-beats *after* `self.beats()` (floored to
+    /// the nearest 256th-beat).
+    ///
+    /// This will always be in the range `[0, 255]`.
+    pub fn num_256th_beats(&self) -> u32 {
+        self.num_fractional_beats::<256>()
+    }
+
+    /// The number of 512th-beats *after* `self.beats()` (floored to
+    /// the nearest 512th-beat).
+    ///
+    /// This will always be in the range `[0, 511]`.
+    pub fn num_512th_beats(&self) -> u32 {
+        self.num_fractional_beats::<512>()
+    }
+
+    /// The number of 1024th-beats *after* `self.beats()` (floored to
+    /// the nearest 1024th-beat).
+    ///
+    /// This will always be in the range `[0, 1023]`.
+    pub fn num_1024th_beats(&self) -> u32 {
+        self.num_fractional_beats::<1024>()
+    }
+
+    /// The number of 2048th-beats *after* `self.beats()` (floored to
+    /// the nearest 2048th-beat).
+    ///
+    /// This will always be in the range `[0, 2047]`.
+    pub fn num_2048th_beats(&self) -> u32 {
+        self.num_fractional_beats::<2048>()
     }
 
     /// The number of third-beats *after* `self.beats()` (floored to
@@ -591,11 +694,19 @@ impl MusicalTime {
         self.num_fractional_beats::<10>()
     }
 
-    /// The number of twelth-beats *after* `self.beats()` (floored to
+    /// The number of eleventh-beats *after* `self.beats()` (floored to
+    /// the nearest eleventh-beat).
+    ///
+    /// This will always be in the range `[0, 10]`.
+    pub fn num_eleventh_beats(&self) -> u32 {
+        self.num_fractional_beats::<11>()
+    }
+
+    /// The number of twelfth-beats *after* `self.beats()` (floored to
     /// the nearest twelth-beat).
     ///
     /// This will always be in the range `[0, 11]`.
-    pub fn num_twelth_beats(&self) -> u32 {
+    pub fn num_twelfth_beats(&self) -> u32 {
         self.num_fractional_beats::<12>()
     }
 
@@ -701,74 +812,37 @@ impl MusicalTime {
     /// Try subtracting `rhs` from self. This will return `None` if the resulting value
     /// is negative due to `rhs` being larger than self (overflow).
     pub fn checked_sub(self, rhs: MusicalTime) -> Option<MusicalTime> {
-        if self >= rhs {
-            let mut beats = self.beats - rhs.beats;
-            let super_beats = if self.super_beats < rhs.super_beats {
-                beats -= 1;
-                SUPER_UNITS - (rhs.super_beats - self.super_beats)
-            } else {
-                self.super_beats - rhs.super_beats
-            };
-
-            Some(Self { beats, super_beats })
-        } else {
-            None
-        }
-    }
-}
-
-impl Default for MusicalTime {
-    fn default() -> Self {
-        MusicalTime {
-            beats: 0,
-            super_beats: 0,
-        }
-    }
-}
-
-impl PartialOrd for MusicalTime {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self.beats.partial_cmp(&other.beats) {
-            Some(std::cmp::Ordering::Equal) => self.super_beats.partial_cmp(&other.super_beats),
-            res => res,
-        }
+        self.0.checked_sub(rhs.0).map(|s| Self(s))
     }
 }
 
 impl Add<MusicalTime> for MusicalTime {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
-        let mut beats = self.beats + rhs.beats;
-        let mut super_beats = self.super_beats + rhs.super_beats;
-        if super_beats >= SUPER_UNITS {
-            super_beats -= SUPER_UNITS;
-            beats += 1;
-        }
-
-        Self { beats, super_beats }
+        Self(self.0 + rhs.0)
+    }
+}
+impl Sub<MusicalTime> for MusicalTime {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
     }
 }
 impl Mul<u32> for MusicalTime {
     type Output = Self;
     fn mul(self, rhs: u32) -> Self::Output {
-        let mut beats = self.beats * rhs;
-        let mut super_beats_u64 = u64::from(self.super_beats) * u64::from(rhs);
-        if super_beats_u64 >= u64::from(SUPER_UNITS) {
-            let additional_beats = super_beats_u64 % u64::from(SUPER_UNITS);
-            beats += additional_beats as u32;
-            super_beats_u64 -= additional_beats * u64::from(SUPER_UNITS);
-        }
-
-        Self {
-            beats,
-            super_beats: super_beats_u64 as u32,
-        }
+        Self(self.0 * u64::from(rhs))
     }
 }
 
 impl AddAssign<MusicalTime> for MusicalTime {
     fn add_assign(&mut self, other: Self) {
         *self = *self + other
+    }
+}
+impl SubAssign<MusicalTime> for MusicalTime {
+    fn sub_assign(&mut self, other: Self) {
+        *self = *self - other
     }
 }
 impl MulAssign<u32> for MusicalTime {
@@ -889,7 +963,7 @@ impl Seconds {
     /// [`SuperFrames`]: struct.Frames.html
     pub fn to_nearest_super_frame_round(&self) -> SuperFrames {
         if self.0 > 0.0 {
-            SuperFrames((self.0 * f64::from(SUPER_UNITS)).round() as u64)
+            SuperFrames((self.0 * (SUPER_UNITS as f64)).round() as u64)
         } else {
             SuperFrames(0)
         }
@@ -905,7 +979,7 @@ impl Seconds {
     /// [`SuperFrames`]: struct.Frames.html
     pub fn to_nearest_super_frame_floor(&self) -> SuperFrames {
         if self.0 > 0.0 {
-            SuperFrames((self.0 * f64::from(SUPER_UNITS)).floor() as u64)
+            SuperFrames((self.0 * (SUPER_UNITS as f64)).floor() as u64)
         } else {
             SuperFrames(0)
         }
@@ -921,7 +995,7 @@ impl Seconds {
     /// [`SuperFrames`]: struct.Frames.html
     pub fn to_nearest_super_frame_ceil(&self) -> SuperFrames {
         if self.0 > 0.0 {
-            SuperFrames((self.0 * f64::from(SUPER_UNITS)).ceil() as u64)
+            SuperFrames((self.0 * (SUPER_UNITS as f64)).ceil() as u64)
         } else {
             SuperFrames(0)
         }
@@ -938,7 +1012,7 @@ impl Seconds {
     /// [`SuperFrames`]: struct.Frames.html
     pub fn to_sub_super_frame(&self) -> (SuperFrames, f64) {
         if self.0 > 0.0 {
-            let frames_f64 = self.0 * f64::from(SUPER_UNITS);
+            let frames_f64 = self.0 * (SUPER_UNITS as f64);
             (SuperFrames(frames_f64.floor() as u64), frames_f64.fract())
         } else {
             (SuperFrames(0), 0.0)
@@ -1156,7 +1230,7 @@ impl MulAssign<u64> for Frames {
 
 /// Unit of time length in super-frames (of a single de-interleaved channel).
 ///
-/// A "super-frame" is a unit of time that is exactly 1 / 56,448,000 of a second.
+/// A "super-frame" is a unit of time that is exactly 1 / 1,241,856,000 of a second.
 /// This number happens to be nicely divisible by all common sampling rates, allowing
 /// changes to sample rate in a project to be a lossless process.
 #[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
@@ -1166,11 +1240,12 @@ pub struct SuperFrames(pub u64);
 impl SuperFrames {
     /// * `super_frames` - The number of super-frames
     ///
-    /// A "super-frame" is a unit of time equal to 1 / 56,448,000 of a second. This number was chosen
+    /// A "super-frame" is a unit of time equal to 1 / 1,241,856,000 of a second. This number was chosen
     /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
-    /// 10, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, and 1920`, as well as common sampling
-    /// rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`. This ensures that
-    /// any recording of frame data in this format will always be at-least sample-accurate.
+    /// 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1024, 2048, and 1920`, as well as
+    /// common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`.
+    /// This ensures that any recording of frame data in this format will always be at-least
+    /// sample-accurate.
     pub fn new(super_frame: u64) -> Self {
         Self(super_frame)
     }
@@ -1197,15 +1272,15 @@ impl SuperFrames {
     /// [`Frames`]: struct.Frames.html
     pub fn from_frame(frame: Frames, sample_rate: SampleRate) -> Self {
         match sample_rate.0 as usize {
-            44100 => Self(frame.0 * (u64::from(SUPER_UNITS) / 44100)),
-            48000 => Self(frame.0 * (u64::from(SUPER_UNITS) / 48000)),
-            88200 => Self(frame.0 * (u64::from(SUPER_UNITS) / 88200)),
-            96000 => Self(frame.0 * (u64::from(SUPER_UNITS) / 96000)),
-            176400 => Self(frame.0 * (u64::from(SUPER_UNITS) / 176400)),
-            192000 => Self(frame.0 * (u64::from(SUPER_UNITS) / 192000)),
-            22050 => Self(frame.0 * (u64::from(SUPER_UNITS) / 22050)),
-            24000 => Self(frame.0 * (u64::from(SUPER_UNITS) / 24000)),
-            _ => Self((frame.0 as f64 * (f64::from(SUPER_UNITS) / sample_rate.0)).round() as u64),
+            44100 => Self(frame.0 * (SUPER_UNITS / 44100)),
+            48000 => Self(frame.0 * (SUPER_UNITS / 48000)),
+            88200 => Self(frame.0 * (SUPER_UNITS / 88200)),
+            96000 => Self(frame.0 * (SUPER_UNITS / 96000)),
+            176400 => Self(frame.0 * (SUPER_UNITS / 176400)),
+            192000 => Self(frame.0 * (SUPER_UNITS / 192000)),
+            22050 => Self(frame.0 * (SUPER_UNITS / 22050)),
+            24000 => Self(frame.0 * (SUPER_UNITS / 24000)),
+            _ => Self((frame.0 as f64 * ((SUPER_UNITS as f64) / sample_rate.0)).round() as u64),
         }
     }
 
@@ -1215,7 +1290,7 @@ impl SuperFrames {
     ///
     /// [`Seconds`]: struct.Seconds.html
     pub fn to_seconds(&self) -> Seconds {
-        Seconds(self.0 as f64 / f64::from(SUPER_UNITS))
+        Seconds(self.0 as f64 / (SUPER_UNITS as f64))
     }
 
     /// Convert to the corresponding [`MusicalTime`].
