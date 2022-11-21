@@ -236,9 +236,17 @@ impl MusicalTime {
     /// If `beats` is less than 0.0, then a musical time of `0` will be returned instead.
     pub fn from_beats_f64(beats: f64) -> Self {
         if beats >= 0.0 {
+            let mut beats_u32 = beats.trunc() as u32;
+            let mut ticks = (beats.fract() * f64::from(SUPER_BEAT_TICKS_PER_BEAT)).round() as u32;
+
+            if ticks >= SUPER_BEAT_TICKS_PER_BEAT {
+                ticks = 0;
+                beats_u32 += 1;
+            }
+
             Self {
-                beats: beats.trunc() as u32,
-                ticks: (beats.fract() * f64::from(SUPER_BEAT_TICKS_PER_BEAT)).round() as u32,
+                beats: beats_u32,
+                ticks,
             }
         } else {
             Self { beats: 0, ticks: 0 }
