@@ -1,22 +1,23 @@
 use std::ops::{Add, AddAssign, Mul, MulAssign};
 
-use super::{SampleRate, SampleTime, Seconds, SuperSampleTime};
+use super::{SampleRate, SampleTime, SecondsF64, SuperclockTime};
 
 /// (`1,241,856,000`) This number was chosen because it is nicely divisible by a whole slew of factors
-/// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1024,
-/// 2048, and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000, 88200,
-/// 96000, 176400, and 192000`. This ensures that any recording of note or sample data in this format
-/// will always be at-least sample-accurate.
+/// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
+/// 1,024, 1,920, 2,048, 4,096, 8,192, 16,384, and 32,768`. This ensures that all these subdivisions of
+/// musical beats can be stored and operated on with *exact* precision. This number is also much larger
+/// than all of the common sampling rates, allowing for sample-accurate precision even at very high
+/// sampling rates and very low BPMs.
 pub static SUPER_BEAT_TICKS_PER_BEAT: u32 = 1_241_856_000;
 
 /// Musical time in units of beats + ticks.
 ///
-/// A "tick" is a unit of time equal to 1 / 1,241,856,000 of a beat. This number was chosen
-/// because it is nicely divisible by a whole slew of factors
-/// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
-/// 1024, 2048, and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000,
-/// 88200, 96000, 176400, and 192000`. This ensures that any recording of note or sample data in
-/// this format will always be at-least sample-accurate.
+/// A "tick" is a unit of time equal to `1 / 1,241,856,000` of a beat. This number was chosen because
+/// it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+/// 13, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1,024, 1,920, 2,048, 4,096, 8,192, 16,384, and
+/// 32,768`. This ensures that all these subdivisions of musical beats can be stored and operated on
+/// with *exact* precision. This number is also much larger than all of the common sampling rates,
+/// allowing for sample-accurate precision even at very high sampling rates and very low BPMs.
 #[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
 #[derive(Default, Debug, Clone, Copy, Hash)]
 pub struct MusicalTime {
@@ -26,15 +27,16 @@ pub struct MusicalTime {
 
 impl MusicalTime {
     /// * `beats` - The time in musical beats.
-    /// * `ticks` - The number of ticks (after the time in `self.beats`) (Note this value
+    /// * `ticks` - The number of ticks (after the time in `beats`) (Note this value
     /// will be constrained to the range `[0, 1,241,856,000)`).
     ///
-    /// A "tick" is a unit of time equal to 1 / 1,241,856,000 of a beat. This number was chosen
-    /// because it is nicely divisible by a whole slew of factors
-    /// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
-    /// 1024, 2048, and 1920`, as well as common sampling rates such as `22050, 24000, 44100, 48000,
-    /// 88200, 96000, 176400, and 192000`. This ensures that any recording of note or sample data in
-    /// this format will always be at-least sample-accurate.
+    /// A "tick" is a unit of time equal to `1 / 1,241,856,000` of a beat. This number was chosen
+    /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
+    /// 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1,024, 1,920, 2,048, 4,096,
+    /// 8,192, 16,384, and 32,768`. This ensures that all these subdivisions of musical beats can be
+    /// stored and operated on with *exact* precision. This number is also much larger than all of
+    /// the common sampling rates, allowing for sample-accurate precision even at very high sampling
+    /// rates and very low BPMs.
     pub fn new(beats: u32, ticks: u32) -> Self {
         Self {
             beats,
@@ -47,32 +49,32 @@ impl MusicalTime {
         self.beats
     }
 
-    /// The total number of ticks.
-    ///
-    /// A "tick" is a unit of time equal to 1 / 1,241,856,000 of a beat. This number was chosen
-    /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
-    /// 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1024, 2048, and 1920`, as well as
-    /// common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`.
-    /// This ensures that any recording of note data in this format will always be at-least
-    /// sample-accurate.
-    ///
-    /// This value will always be in the range `[0, 1,241,856,000)`.
-    pub fn total_ticks(&self) -> u64 {
-        (u64::from(self.beats) * u64::from(SUPER_BEAT_TICKS_PER_BEAT)) + u64::from(self.ticks)
-    }
-
     /// The fractional number of ticks (after the time in `self.beats()`).
     ///
-    /// A "tick" is a unit of time equal to 1 / 1,241,856,000 of a beat. This number was chosen
+    /// A "tick" is a unit of time equal to `1 / 1,241,856,000` of a beat. This number was chosen
     /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
-    /// 10, 11, 12, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1024, 2048, and 1920`, as well as
-    /// common sampling rates such as `22050, 24000, 44100, 48000, 88200, 96000, 176400, and 192000`.
-    /// This ensures that any recording of note data in this format will always be at-least
-    /// sample-accurate.
+    /// 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1,024, 1,920, 2,048, 4,096,
+    /// 8,192, 16,384, and 32,768`. This ensures that all these subdivisions of musical beats can be
+    /// stored and operated on with *exact* precision. This number is also much larger than all of
+    /// the common sampling rates, allowing for sample-accurate precision even at very high sampling
+    /// rates and very low BPMs.
     ///
     /// This value will always be in the range `[0, 1,241,856,000)`.
     pub fn ticks(&self) -> u32 {
         self.ticks
+    }
+
+    /// The total number of ticks.
+    ///
+    /// A "tick" is a unit of time equal to `1 / 1,241,856,000` of a beat. This number was chosen
+    /// because it is nicely divisible by a whole slew of factors including `2, 3, 4, 5, 6, 7, 8, 9,
+    /// 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512, 1,024, 1,920, 2,048, 4,096,
+    /// 8,192, 16,384, and 32,768`. This ensures that all these subdivisions of musical beats can be
+    /// stored and operated on with *exact* precision. This number is also much larger than all of
+    /// the common sampling rates, allowing for sample-accurate precision even at very high sampling
+    /// rates and very low BPMs.
+    pub fn total_ticks(&self) -> u64 {
+        (u64::from(self.beats) * u64::from(SUPER_BEAT_TICKS_PER_BEAT)) + u64::from(self.ticks)
     }
 
     /// * `beats` - The time in musical beats.
@@ -537,13 +539,13 @@ impl MusicalTime {
         self.num_fractional_beats::<24>()
     }
 
-    /// Convert to the corresponding time in [`Seconds`].
+    /// Convert to the corresponding time in [`SecondsF64`].
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`Seconds`]: struct.Seconds.html
-    pub fn to_seconds(&self, bpm: f64) -> Seconds {
-        Seconds(self.as_beats_f64() * 60.0 / bpm)
+    /// [`SecondsF64`]: struct.SecondsF64.html
+    pub fn to_seconds_f64(&self, bpm: f64) -> SecondsF64 {
+        SecondsF64(self.as_beats_f64() * 60.0 / bpm)
     }
 
     /// Convert to the corresponding discrete [`SampleTime`]. This will be rounded to the nearest sample.
@@ -554,7 +556,8 @@ impl MusicalTime {
     ///
     /// [`SampleTime`]: struct.SampleTime.html
     pub fn to_nearest_sample_round(&self, bpm: f64, sample_rate: SampleRate) -> SampleTime {
-        self.to_seconds(bpm).to_nearest_sample_round(sample_rate)
+        self.to_seconds_f64(bpm)
+            .to_nearest_sample_round(sample_rate)
     }
 
     /// Convert to the corresponding discrete [`SampleTime`]. This will be floored to the nearest sample.
@@ -565,7 +568,8 @@ impl MusicalTime {
     ///
     /// [`SampleTime`]: struct.SampleTime.html
     pub fn to_nearest_sample_floor(&self, bpm: f64, sample_rate: SampleRate) -> SampleTime {
-        self.to_seconds(bpm).to_nearest_sample_floor(sample_rate)
+        self.to_seconds_f64(bpm)
+            .to_nearest_sample_floor(sample_rate)
     }
 
     /// Convert to the corresponding discrete [`SampleTime`]. This will be ceil-ed to the nearest sample.
@@ -576,7 +580,7 @@ impl MusicalTime {
     ///
     /// [`SampleTime`]: struct.SampleTime.html
     pub fn to_nearest_sample_ceil(&self, bpm: f64, sample_rate: SampleRate) -> SampleTime {
-        self.to_seconds(bpm).to_nearest_sample_ceil(sample_rate)
+        self.to_seconds_f64(bpm).to_nearest_sample_ceil(sample_rate)
     }
 
     /// Convert to the corresponding discrete [`SampleTime`] floored to the nearest sample,
@@ -588,44 +592,44 @@ impl MusicalTime {
     ///
     /// [`SampleTime`]: struct.SampleTime.html
     pub fn to_sub_sample(&self, bpm: f64, sample_rate: SampleRate) -> (SampleTime, f64) {
-        self.to_seconds(bpm).to_sub_sample(sample_rate)
+        self.to_seconds_f64(bpm).to_sub_sample(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`SuperSampleTime`]. This will be rounded to the nearest super-frame.
+    /// Convert to the corresponding discrete [`SuperclockTime`]. This will be rounded to the nearest super-frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
-    pub fn to_nearest_super_sample_round(&self, bpm: f64) -> SuperSampleTime {
-        self.to_seconds(bpm).to_nearest_super_sample_round()
+    /// [`SuperclockTime`]: struct.SuperclockTime.html
+    pub fn to_nearest_super_sample_round(&self, bpm: f64) -> SuperclockTime {
+        self.to_seconds_f64(bpm).to_nearest_super_sample_round()
     }
 
-    /// Convert to the corresponding discrete [`SuperSampleTime`]. This will be floored to the nearest super-frame.
+    /// Convert to the corresponding discrete [`SuperclockTime`]. This will be floored to the nearest super-frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
-    pub fn to_nearest_super_sample_floor(&self, bpm: f64) -> SuperSampleTime {
-        self.to_seconds(bpm).to_nearest_super_sample_floor()
+    /// [`SuperclockTime`]: struct.SuperclockTime.html
+    pub fn to_nearest_super_sample_floor(&self, bpm: f64) -> SuperclockTime {
+        self.to_seconds_f64(bpm).to_nearest_super_sample_floor()
     }
 
-    /// Convert to the corresponding discrete [`SuperSampleTime`]. This will be ceil-ed to the nearest super-frame.
+    /// Convert to the corresponding discrete [`SuperclockTime`]. This will be ceil-ed to the nearest super-frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
-    pub fn to_nearest_super_sample_ceil(&self, bpm: f64) -> SuperSampleTime {
-        self.to_seconds(bpm).to_nearest_super_sample_ceil()
+    /// [`SuperclockTime`]: struct.SuperclockTime.html
+    pub fn to_nearest_super_sample_ceil(&self, bpm: f64) -> SuperclockTime {
+        self.to_seconds_f64(bpm).to_nearest_super_sample_ceil()
     }
 
-    /// Convert to the corresponding discrete [`SuperSampleTime`] floored to the nearest super-frame,
+    /// Convert to the corresponding discrete [`SuperclockTime`] floored to the nearest super-frame,
     /// while also returning the fractional sub-super-frame part.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
-    pub fn to_sub_super_sample(&self, bpm: f64) -> (SuperSampleTime, f64) {
-        self.to_seconds(bpm).to_sub_super_sample()
+    /// [`SuperclockTime`]: struct.SuperclockTime.html
+    pub fn to_sub_super_sample(&self, bpm: f64) -> (SuperclockTime, f64) {
+        self.to_seconds_f64(bpm).to_sub_super_sample()
     }
 
     /// Try subtracting `rhs` from self. This will return `None` if the resulting value

@@ -9,7 +9,7 @@
 use std::fmt;
 
 use crate::smooth::{SmoothF32, SmoothStatus};
-use crate::time::{SampleRate, Seconds};
+use crate::time::{SampleRate, SecondsF64};
 
 const DECLICK_SETTLE: f32 = 0.001;
 
@@ -65,7 +65,7 @@ where
         }
     }
 
-    pub fn set_speed(&mut self, sample_rate: SampleRate, seconds: Seconds) {
+    pub fn set_speed(&mut self, sample_rate: SampleRate, seconds: SecondsF64) {
         self.fade.set_speed(sample_rate, seconds);
     }
 

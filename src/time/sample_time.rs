@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
 
-use super::{MusicalTime, SampleRate, Seconds, SuperSampleTime};
+use super::{MusicalTime, SampleRate, SecondsF64, SuperclockTime};
 
 /// Unit of time length in samples (of a single de-interleaved channel).
 #[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
@@ -12,14 +12,14 @@ impl SampleTime {
         Self(sample)
     }
 
-    /// Convert to the corresponding time in [`Seconds`] with the given [`SampleRate`].
+    /// Convert to the corresponding time in [`SecondsF64`] with the given [`SampleRate`].
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`Seconds`]: struct.Seconds.html
+    /// [`SecondsF64`]: struct.SecondsF64.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_seconds(&self, sample_rate: SampleRate) -> Seconds {
-        Seconds(self.0 as f64 / sample_rate)
+    pub fn to_seconds_f64(&self, sample_rate: SampleRate) -> SecondsF64 {
+        SecondsF64(self.0 as f64 / sample_rate)
     }
 
     /// Convert to the corresponding [`MusicalTime`].
@@ -30,19 +30,19 @@ impl SampleTime {
     ///
     /// [`MusicalTime`]: struct.MusicalTime.html
     pub fn to_musical(&self, bpm: f64, sample_rate: SampleRate) -> MusicalTime {
-        self.to_seconds(sample_rate).to_musical(bpm)
+        self.to_seconds_f64(sample_rate).to_musical(bpm)
     }
 
-    /// Convert to the corresponding time length in [`SuperSampleTime`] from the given [`SampleRate`].
+    /// Convert to the corresponding time length in [`SuperclockTime`] from the given [`SampleRate`].
     ///
     /// This conversion **IS** lossless if the sample rate happens to be equal to one of the common
     /// sample rates: `22050, 24000, 44100, 48000, 88200, 96000, 176400, or 192000`. This
     /// conversion is *NOT* lossless otherwise.
     ///
-    /// [`SuperSampleTime`]: struct.SuperSampleTime.html
+    /// [`SuperclockTime`]: struct.SuperclockTime.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_super_sample(&self, sample_rate: SampleRate) -> SuperSampleTime {
-        SuperSampleTime::from_sample(*self, sample_rate)
+    pub fn to_super_sample(&self, sample_rate: SampleRate) -> SuperclockTime {
+        SuperclockTime::from_sample(*self, sample_rate)
     }
 }
 

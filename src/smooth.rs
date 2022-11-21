@@ -10,7 +10,7 @@ use std::fmt;
 use std::ops;
 use std::slice;
 
-use crate::time::{SampleRate, Seconds};
+use crate::time::{SampleRate, SecondsF64};
 
 const SETTLE: f32 = 0.00001f32;
 
@@ -145,7 +145,7 @@ impl SmoothF32 {
         self.status.is_active()
     }
 
-    pub fn set_speed(&mut self, sample_rate: SampleRate, seconds: Seconds) {
+    pub fn set_speed(&mut self, sample_rate: SampleRate, seconds: SecondsF64) {
         self.b = (-1.0f32 / (seconds.0 as f32 * sample_rate.0 as f32)).exp();
         self.a = 1.0f32 - self.b;
     }
@@ -291,7 +291,7 @@ impl SmoothF64 {
         self.status.is_active()
     }
 
-    pub fn set_speed(&mut self, sample_rate: SampleRate, seconds: Seconds) {
+    pub fn set_speed(&mut self, sample_rate: SampleRate, seconds: SecondsF64) {
         self.b = (-1.0f64 / (seconds.0 as f64 * sample_rate.0 as f64)).exp();
         self.a = 1.0f64 - self.b;
     }

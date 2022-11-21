@@ -17,7 +17,7 @@ use crate::decibel::{
     db_to_coeff_clamped_neg_90_db_f32, db_to_coeff_clamped_neg_90_db_f64,
 };
 use crate::smooth::{SmoothF32, SmoothF64, SmoothOutputF32, SmoothOutputF64};
-use crate::time::{SampleRate, Seconds};
+use crate::time::{SampleRate, SecondsF64};
 
 /// A good default value to use as `smooth_secs` parameter when creating a [`ParamF32`]/[`ParamF64`].
 ///
@@ -25,7 +25,7 @@ use crate::time::{SampleRate, Seconds};
 ///
 /// [`ParamF32`]: struct.ParamF32.html
 /// [`ParamF64`]: struct.ParamF64.html
-pub const DEFAULT_SMOOTH_SECS: Seconds = Seconds(5.0 / 1_000.0);
+pub const DEFAULT_SMOOTH_SECS: SecondsF64 = SecondsF64(5.0 / 1_000.0);
 
 /// A good default value to use as `gradient` parameter when creating a [`ParamF32`]/[`ParamF64`] that
 /// deals with decibels.
@@ -127,7 +127,7 @@ pub struct ParamF32 {
     default_value: f32,
 
     smoothed: SmoothF32,
-    smooth_secs: Seconds,
+    smooth_secs: SecondsF64,
 }
 
 impl ParamF32 {
@@ -156,7 +156,7 @@ impl ParamF32 {
         max: f32,
         gradient: Gradient,
         unit: Unit,
-        smooth_secs: Seconds,
+        smooth_secs: SecondsF64,
         sample_rate: SampleRate,
         max_blocksize: usize,
     ) -> (Self, ParamF32Handle) {
@@ -222,7 +222,7 @@ impl ParamF32 {
         max_value: f32,
         gradient: Gradient,
         unit: Unit,
-        smooth_secs: Seconds,
+        smooth_secs: SecondsF64,
         sample_rate: SampleRate,
         max_blocksize: usize,
     ) -> (Self, ParamF32Handle) {
@@ -631,7 +631,7 @@ pub struct ParamF64 {
     default_value: f64,
 
     smoothed: SmoothF64,
-    smooth_secs: Seconds,
+    smooth_secs: SecondsF64,
 }
 
 impl ParamF64 {
@@ -660,7 +660,7 @@ impl ParamF64 {
         max: f64,
         gradient: Gradient,
         unit: Unit,
-        smooth_secs: Seconds,
+        smooth_secs: SecondsF64,
         sample_rate: SampleRate,
         max_blocksize: usize,
     ) -> (Self, ParamF64Handle) {
@@ -726,7 +726,7 @@ impl ParamF64 {
         max_value: f64,
         gradient: Gradient,
         unit: Unit,
-        smooth_secs: Seconds,
+        smooth_secs: SecondsF64,
         sample_rate: SampleRate,
         max_blocksize: usize,
     ) -> (Self, ParamF64Handle) {
