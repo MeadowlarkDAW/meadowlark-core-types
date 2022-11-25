@@ -3,16 +3,16 @@
 #[cfg(feature = "serde-derive")]
 use serde::{Deserialize, Serialize};
 
+mod frame_time;
 mod musical_time;
 mod sample_rate;
-mod sample_time;
 mod seconds;
 mod superclock_time;
 //mod video_timecode;
 
+pub use frame_time::FrameTime;
 pub use musical_time::{MusicalTime, SUPER_BEAT_TICKS_PER_BEAT};
 pub use sample_rate::SampleRate;
-pub use sample_time::SampleTime;
 pub use seconds::SecondsF64;
 pub use superclock_time::{SuperclockTime, SUPER_SAMPLE_TICKS_PER_SECOND};
 //pub use video_timecode::{VideoFpsFormat, VideoTimecode};

@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Mul, MulAssign};
 
-use super::{MusicalTime, SampleRate, SampleTime, SecondsF64};
+use super::{FrameTime, MusicalTime, SampleRate, SecondsF64};
 
 /// (`282,240,000`) This number was chosen because it is nicely divisible by all the common sample
 /// rates: `22,050, 24,000, 44,100, 48,000, 88,200, 96,000, 176,400, 192,000, 352,800, and
@@ -171,7 +171,7 @@ impl SuperclockTime {
     /// If the seconds value is negative, then the `SuperclockTime`'s values and the
     /// fractional value will both be 0.
     ///
-    /// [`SuperclockTime`]: struct.SampleTime.html
+    /// [`SuperclockTime`]: struct.FrameTime.html
     pub fn from_seconds_f64_with_sub_tick(seconds: SecondsF64) -> (Self, f64) {
         if seconds.0 > 0.0 {
             let mut secs = seconds.0.trunc() as u32;
@@ -203,16 +203,16 @@ impl SuperclockTime {
         }
     }
 
-    /// Get the time in [`SuperclockTime`] from the time in [`SampleTime`] when the samplerate
+    /// Get the time in [`SuperclockTime`] from the time in [`FrameTime`] when the samplerate
     /// is one of the common sample rates.
     ///
     /// This conversion is *ONLY* correct if the `SAMPLE_RATE` constant is one of the following
     /// common sample rates: `22,050, 24,000, 44,100, 48,000, 88,200, 96,000, 176,400, 192,000,
-    /// 352,800, or 384,000`. Otherwise, please use `Self::from_sample()`.
+    /// 352,800, or 384,000`. Otherwise, please use `Self::from_frame()`.
     ///
     /// [`SuperclockTime`]: struct.SuperclockTime.html
-    /// [`SampleTime`]: struct.SampleTime.html
-    pub fn from_sample_with_common_samplerate<const SAMPLE_RATE: u32>(sample: SampleTime) -> Self {
+    /// [`FrameTime`]: struct.FrameTime.html
+    pub fn from_frame_with_common_framerate<const SAMPLE_RATE: u32>(sample: FrameTime) -> Self {
         // Make sure that the compiler optimizes these two operations into a single operation.
         let seconds = sample.0 / u64::from(SAMPLE_RATE);
         let samples_after = sample.0 % u64::from(SAMPLE_RATE);
@@ -223,7 +223,7 @@ impl SuperclockTime {
         }
     }
 
-    /// Get the time in [`SuperclockTime`] from the time in [`SampleTime`].
+    /// Get the time in [`SuperclockTime`] from the time in [`FrameTime`].
     ///
     /// This conversion **IS** lossless if the sample rate happens to be equal to one of the
     /// common sample rates: `22,050, 24,000, 44,100, 48,000, 88,200, 96,000, 176,400, 192,000,
@@ -231,19 +231,19 @@ impl SuperclockTime {
     /// given `sample` value is very large).
     ///
     /// [`SuperclockTime`]: struct.SuperclockTime.html
-    /// [`SampleTime`]: struct.SampleTime.html
-    pub fn from_sample(sample: SampleTime, sample_rate: SampleRate) -> Self {
+    /// [`FrameTime`]: struct.FrameTime.html
+    pub fn from_frame(sample: FrameTime, sample_rate: SampleRate) -> Self {
         match sample_rate.0 as usize {
-            44_100 => Self::from_sample_with_common_samplerate::<44_100>(sample),
-            48_000 => Self::from_sample_with_common_samplerate::<48_000>(sample),
-            88_200 => Self::from_sample_with_common_samplerate::<88_200>(sample),
-            96_000 => Self::from_sample_with_common_samplerate::<96_000>(sample),
-            176_400 => Self::from_sample_with_common_samplerate::<176_400>(sample),
-            192_000 => Self::from_sample_with_common_samplerate::<192_000>(sample),
-            352_800 => Self::from_sample_with_common_samplerate::<352_800>(sample),
-            384_000 => Self::from_sample_with_common_samplerate::<384_000>(sample),
-            22_050 => Self::from_sample_with_common_samplerate::<22_050>(sample),
-            24_000 => Self::from_sample_with_common_samplerate::<24_000>(sample),
+            44_100 => Self::from_frame_with_common_framerate::<44_100>(sample),
+            48_000 => Self::from_frame_with_common_framerate::<48_000>(sample),
+            88_200 => Self::from_frame_with_common_framerate::<88_200>(sample),
+            96_000 => Self::from_frame_with_common_framerate::<96_000>(sample),
+            176_400 => Self::from_frame_with_common_framerate::<176_400>(sample),
+            192_000 => Self::from_frame_with_common_framerate::<192_000>(sample),
+            352_800 => Self::from_frame_with_common_framerate::<352_800>(sample),
+            384_000 => Self::from_frame_with_common_framerate::<384_000>(sample),
+            22_050 => Self::from_frame_with_common_framerate::<22_050>(sample),
+            24_000 => Self::from_frame_with_common_framerate::<24_000>(sample),
             _ => Self::from_seconds_f64(SecondsF64(sample.0 as f64 / sample_rate.as_f64())),
         }
     }
@@ -269,37 +269,37 @@ impl SuperclockTime {
         self.to_seconds_f64().to_musical(bpm)
     }
 
-    /// Convert to the corresponding time length in [`SampleTime`] from the given [`SampleRate`],
+    /// Convert to the corresponding time length in [`FrameTime`] from the given [`SampleRate`],
     /// rounded to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
+    /// [`FrameTime`]: struct.FrameTime.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_sample_round(&self, sample_rate: SampleRate) -> SampleTime {
-        self.to_seconds_f64().to_nearest_sample_round(sample_rate)
+    pub fn to_nearest_frame_round(&self, sample_rate: SampleRate) -> FrameTime {
+        self.to_seconds_f64().to_nearest_frame_round(sample_rate)
     }
 
-    /// Convert to the corresponding time length in [`SampleTime`] from the given [`SampleRate`],
+    /// Convert to the corresponding time length in [`FrameTime`] from the given [`SampleRate`],
     /// floored to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
+    /// [`FrameTime`]: struct.FrameTime.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_sample_floor(&self, sample_rate: SampleRate) -> SampleTime {
-        self.to_seconds_f64().to_nearest_sample_floor(sample_rate)
+    pub fn to_nearest_frame_floor(&self, sample_rate: SampleRate) -> FrameTime {
+        self.to_seconds_f64().to_nearest_frame_floor(sample_rate)
     }
 
-    /// Convert to the corresponding time length in [`SampleTime`] from the given [`SampleRate`],
+    /// Convert to the corresponding time length in [`FrameTime`] from the given [`SampleRate`],
     /// ceil-ed to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
+    /// [`FrameTime`]: struct.FrameTime.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_sample_ceil(&self, sample_rate: SampleRate) -> SampleTime {
-        self.to_seconds_f64().to_nearest_sample_ceil(sample_rate)
+    pub fn to_nearest_frame_ceil(&self, sample_rate: SampleRate) -> FrameTime {
+        self.to_seconds_f64().to_nearest_frame_ceil(sample_rate)
     }
 
     /// Try subtracting `rhs` from self. This will return `None` if the resulting value

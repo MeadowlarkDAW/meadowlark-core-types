@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-use super::{MusicalTime, SampleRate, SampleTime, SuperclockTime};
+use super::{FrameTime, MusicalTime, SampleRate, SuperclockTime};
 
 /// Unit of time in "Seconds"
 #[cfg_attr(feature = "serde-derive", derive(Serialize, Deserialize))]
@@ -16,14 +16,14 @@ impl SecondsF64 {
         self.0 as f32
     }
 
-    /// Creates a new time in `Seconds` from [`SampleTime`] and a [`SampleRate`].
+    /// Creates a new time in `Seconds` from [`FrameTime`] and a [`SampleRate`].
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
+    /// [`FrameTime`]: struct.FrameTime.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn from_sample(sample: SampleTime, sample_rate: SampleRate) -> Self {
-        sample.to_seconds_f64(sample_rate)
+    pub fn from_frame(frame: FrameTime, sample_rate: SampleRate) -> Self {
+        frame.to_seconds_f64(sample_rate)
     }
 
     /// Creates a new time in `Seconds` from [`SuperclockTime`].
@@ -35,72 +35,72 @@ impl SecondsF64 {
         superclock_time.to_seconds_f64()
     }
 
-    /// Convert to discrete [`SampleTime`] with the given [`SampleRate`]. This will
-    /// be rounded to the nearest sample.
+    /// Convert to discrete [`FrameTime`] with the given [`SampleRate`]. This will
+    /// be rounded to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then `SampleTime(0)` will be returned instead.
+    /// If the seconds value is negative, then `FrameTime(0)` will be returned instead.
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
+    /// [`FrameTime`]: struct.FrameTime.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_sample_round(&self, sample_rate: SampleRate) -> SampleTime {
+    pub fn to_nearest_frame_round(&self, sample_rate: SampleRate) -> FrameTime {
         if self.0 > 0.0 {
-            SampleTime((self.0 * sample_rate).round() as u64)
+            FrameTime((self.0 * sample_rate).round() as u64)
         } else {
-            SampleTime(0)
+            FrameTime(0)
         }
     }
 
-    /// Convert to discrete [`SampleTime`] with the given [`SampleRate`]. This will
-    /// be floored to the nearest sample.
+    /// Convert to discrete [`FrameTime`] with the given [`SampleRate`]. This will
+    /// be floored to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then `SampleTime(0)` will be returned instead.
+    /// If the seconds value is negative, then `FrameTime(0)` will be returned instead.
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
+    /// [`FrameTime`]: struct.FrameTime.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_sample_floor(&self, sample_rate: SampleRate) -> SampleTime {
+    pub fn to_nearest_frame_floor(&self, sample_rate: SampleRate) -> FrameTime {
         if self.0 > 0.0 {
-            SampleTime((self.0 * sample_rate).floor() as u64)
+            FrameTime((self.0 * sample_rate).floor() as u64)
         } else {
-            SampleTime(0)
+            FrameTime(0)
         }
     }
 
-    /// Convert to discrete [`SampleTime`] with the given [`SampleRate`]. This will
-    /// be ceil-ed to the nearest sample.
+    /// Convert to discrete [`FrameTime`] with the given [`SampleRate`]. This will
+    /// be ceil-ed to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then `SampleTime(0)` will be returned instead.
+    /// If the seconds value is negative, then `FrameTime(0)` will be returned instead.
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
+    /// [`FrameTime`]: struct.FrameTime.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_nearest_sample_ceil(&self, sample_rate: SampleRate) -> SampleTime {
+    pub fn to_nearest_frame_ceil(&self, sample_rate: SampleRate) -> FrameTime {
         if self.0 > 0.0 {
-            SampleTime((self.0 * sample_rate).ceil() as u64)
+            FrameTime((self.0 * sample_rate).ceil() as u64)
         } else {
-            SampleTime(0)
+            FrameTime(0)
         }
     }
 
-    /// Convert to discrete [`SampleTime`] given the [`SampleRate`] floored to the nearest
+    /// Convert to discrete [`FrameTime`] given the [`SampleRate`] floored to the nearest
     /// sample, while also return the fractional sub-sample part.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
-    /// If the seconds value is negative, then `(SampleTime(0), 0.0)` will be returned instead.
+    /// If the seconds value is negative, then `(FrameTime(0), 0.0)` will be returned instead.
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
+    /// [`FrameTime`]: struct.FrameTime.html
     /// [`SampleRate`]: struct.SampleRate.html
-    pub fn to_sub_sample(&self, sample_rate: SampleRate) -> (SampleTime, f64) {
+    pub fn to_sub_frame(&self, sample_rate: SampleRate) -> (FrameTime, f64) {
         if self.0 > 0.0 {
             let samples_f64 = self.0 * sample_rate;
-            (SampleTime(samples_f64.floor() as u64), samples_f64.fract())
+            (FrameTime(samples_f64.floor() as u64), samples_f64.fract())
         } else {
-            (SampleTime(0), 0.0)
+            (FrameTime(0), 0.0)
         }
     }
 
@@ -111,8 +111,8 @@ impl SecondsF64 {
     ///
     /// If the seconds value is negative, then the `SuperclockTime`'s value will be 0.
     ///
-    /// [`SuperclockTime`]: struct.SampleTime.html
-    pub fn to_nearest_super_sample_round(&self) -> SuperclockTime {
+    /// [`SuperclockTime`]: struct.FrameTime.html
+    pub fn to_nearest_super_frame_round(&self) -> SuperclockTime {
         SuperclockTime::from_seconds_f64(*self)
     }
 
@@ -123,8 +123,8 @@ impl SecondsF64 {
     ///
     /// If the seconds value is negative, then the `SuperclockTime`'s values will be 0.
     ///
-    /// [`SuperclockTime`]: struct.SampleTime.html
-    pub fn to_nearest_super_sample_floor(&self) -> SuperclockTime {
+    /// [`SuperclockTime`]: struct.FrameTime.html
+    pub fn to_nearest_super_frame_floor(&self) -> SuperclockTime {
         SuperclockTime::from_seconds_f64_floor(*self)
     }
 
@@ -135,12 +135,12 @@ impl SecondsF64 {
     ///
     /// If the seconds value is negative, then the `SuperclockTime`'s values will be 0.
     ///
-    /// [`SuperclockTime`]: struct.SampleTime.html
-    pub fn to_nearest_super_sample_ceil(&self) -> SuperclockTime {
+    /// [`SuperclockTime`]: struct.FrameTime.html
+    pub fn to_nearest_super_frame_ceil(&self) -> SuperclockTime {
         SuperclockTime::from_seconds_f64_ceil(*self)
     }
 
-    /// Convert to discrete [`SampleTime`] floored to the nearest
+    /// Convert to discrete [`FrameTime`] floored to the nearest
     /// super-frame, while also return the fractional sub-super-frame part.
     ///
     /// Note that this conversion is *NOT* lossless.
@@ -148,8 +148,8 @@ impl SecondsF64 {
     /// If the seconds value is negative, then the `SuperclockTime`'s values and the
     /// fractional value will both be 0.
     ///
-    /// [`SuperclockTime`]: struct.SampleTime.html
-    pub fn to_sub_super_sample(&self) -> (SuperclockTime, f64) {
+    /// [`SuperclockTime`]: struct.FrameTime.html
+    pub fn to_sub_super_frame(&self) -> (SuperclockTime, f64) {
         SuperclockTime::from_seconds_f64_with_sub_tick(*self)
     }
 

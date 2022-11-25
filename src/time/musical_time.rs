@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Mul, MulAssign};
 
-use super::{SampleRate, SampleTime, SecondsF64, SuperclockTime};
+use super::{FrameTime, SampleRate, SecondsF64, SuperclockTime};
 
 /// (`1,241,856,000`) This number was chosen because it is nicely divisible by a whole slew of factors
 /// including `2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 24, 32, 64, 128, 256, 512,
@@ -556,51 +556,49 @@ impl MusicalTime {
         SecondsF64(self.as_beats_f64() * 60.0 / bpm)
     }
 
-    /// Convert to the corresponding discrete [`SampleTime`]. This will be rounded to the nearest sample.
+    /// Convert to the corresponding discrete [`FrameTime`]. This will be rounded to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
-    pub fn to_nearest_sample_round(&self, bpm: f64, sample_rate: SampleRate) -> SampleTime {
-        self.to_seconds_f64(bpm)
-            .to_nearest_sample_round(sample_rate)
+    /// [`FrameTime`]: struct.FrameTime.html
+    pub fn to_nearest_frame_round(&self, bpm: f64, sample_rate: SampleRate) -> FrameTime {
+        self.to_seconds_f64(bpm).to_nearest_frame_round(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`SampleTime`]. This will be floored to the nearest sample.
+    /// Convert to the corresponding discrete [`FrameTime`]. This will be floored to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
-    pub fn to_nearest_sample_floor(&self, bpm: f64, sample_rate: SampleRate) -> SampleTime {
-        self.to_seconds_f64(bpm)
-            .to_nearest_sample_floor(sample_rate)
+    /// [`FrameTime`]: struct.FrameTime.html
+    pub fn to_nearest_frame_floor(&self, bpm: f64, sample_rate: SampleRate) -> FrameTime {
+        self.to_seconds_f64(bpm).to_nearest_frame_floor(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`SampleTime`]. This will be ceil-ed to the nearest sample.
+    /// Convert to the corresponding discrete [`FrameTime`]. This will be ceil-ed to the nearest frame.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
-    pub fn to_nearest_sample_ceil(&self, bpm: f64, sample_rate: SampleRate) -> SampleTime {
-        self.to_seconds_f64(bpm).to_nearest_sample_ceil(sample_rate)
+    /// [`FrameTime`]: struct.FrameTime.html
+    pub fn to_nearest_frame_ceil(&self, bpm: f64, sample_rate: SampleRate) -> FrameTime {
+        self.to_seconds_f64(bpm).to_nearest_frame_ceil(sample_rate)
     }
 
-    /// Convert to the corresponding discrete [`SampleTime`] floored to the nearest sample,
+    /// Convert to the corresponding discrete [`FrameTime`] floored to the nearest frame,
     /// while also returning the fractional sub-sample part.
     ///
     /// Note that this conversion is *NOT* lossless.
     ///
     /// Note that this must be re-calculated after recieving a new [`SampleRate`].
     ///
-    /// [`SampleTime`]: struct.SampleTime.html
-    pub fn to_sub_sample(&self, bpm: f64, sample_rate: SampleRate) -> (SampleTime, f64) {
-        self.to_seconds_f64(bpm).to_sub_sample(sample_rate)
+    /// [`FrameTime`]: struct.FrameTime.html
+    pub fn to_sub_frame(&self, bpm: f64, sample_rate: SampleRate) -> (FrameTime, f64) {
+        self.to_seconds_f64(bpm).to_sub_frame(sample_rate)
     }
 
     /// Convert to the corresponding discrete [`SuperclockTime`]. This will be rounded to the nearest super-frame.
@@ -608,8 +606,8 @@ impl MusicalTime {
     /// Note that this conversion is *NOT* lossless.
     ///
     /// [`SuperclockTime`]: struct.SuperclockTime.html
-    pub fn to_nearest_super_sample_round(&self, bpm: f64) -> SuperclockTime {
-        self.to_seconds_f64(bpm).to_nearest_super_sample_round()
+    pub fn to_nearest_super_frame_round(&self, bpm: f64) -> SuperclockTime {
+        self.to_seconds_f64(bpm).to_nearest_super_frame_round()
     }
 
     /// Convert to the corresponding discrete [`SuperclockTime`]. This will be floored to the nearest super-frame.
@@ -617,8 +615,8 @@ impl MusicalTime {
     /// Note that this conversion is *NOT* lossless.
     ///
     /// [`SuperclockTime`]: struct.SuperclockTime.html
-    pub fn to_nearest_super_sample_floor(&self, bpm: f64) -> SuperclockTime {
-        self.to_seconds_f64(bpm).to_nearest_super_sample_floor()
+    pub fn to_nearest_super_frame_floor(&self, bpm: f64) -> SuperclockTime {
+        self.to_seconds_f64(bpm).to_nearest_super_frame_floor()
     }
 
     /// Convert to the corresponding discrete [`SuperclockTime`]. This will be ceil-ed to the nearest super-frame.
@@ -626,8 +624,8 @@ impl MusicalTime {
     /// Note that this conversion is *NOT* lossless.
     ///
     /// [`SuperclockTime`]: struct.SuperclockTime.html
-    pub fn to_nearest_super_sample_ceil(&self, bpm: f64) -> SuperclockTime {
-        self.to_seconds_f64(bpm).to_nearest_super_sample_ceil()
+    pub fn to_nearest_super_frame_ceil(&self, bpm: f64) -> SuperclockTime {
+        self.to_seconds_f64(bpm).to_nearest_super_frame_ceil()
     }
 
     /// Convert to the corresponding discrete [`SuperclockTime`] floored to the nearest super-frame,
@@ -636,8 +634,8 @@ impl MusicalTime {
     /// Note that this conversion is *NOT* lossless.
     ///
     /// [`SuperclockTime`]: struct.SuperclockTime.html
-    pub fn to_sub_super_sample(&self, bpm: f64) -> (SuperclockTime, f64) {
-        self.to_seconds_f64(bpm).to_sub_super_sample()
+    pub fn to_sub_super_frame(&self, bpm: f64) -> (SuperclockTime, f64) {
+        self.to_seconds_f64(bpm).to_sub_super_frame()
     }
 
     /// Try subtracting `rhs` from self. This will return `None` if the resulting value
